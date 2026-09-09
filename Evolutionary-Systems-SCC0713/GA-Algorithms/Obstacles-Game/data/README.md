@@ -26,4 +26,4 @@ Batches: Help to avoid lucky players. The roulette will select players after  `n
 - Number of sensors: `8` (front, back, left, right, front-right, front-left, back-right, back-left)
 - Total of generations: `370`
 
-[!Bench-001](./bench-001.png)
+![Bench-001](./bench-001.png)

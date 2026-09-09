@@ -1,0 +1,1 @@
+/usr/bin/c++ -g CMakeFiles/run.dir/src/main.cpp.o CMakeFiles/run.dir/src/Player.cpp.o CMakeFiles/run.dir/src/Graphic.cpp.o CMakeFiles/run.dir/src/Game.cpp.o CMakeFiles/run.dir/src/EvolutionTools.cpp.o CMakeFiles/run.dir/src/Utils.cpp.o -o run  /usr/lib/x86_64-linux-gnu/libSDL2.so 

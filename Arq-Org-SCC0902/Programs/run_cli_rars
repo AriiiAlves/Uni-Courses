@@ -1,0 +1,18 @@
+input_file=$1
+
+if [ -z "$input_file" ]; then
+	echo "Error: No input file"
+	exit 1
+fi
+
+if [ ! -f "$input_file" ]; then
+	echo "Error: Input file doen't exists in current folder"
+	exit 1
+fi
+
+if [ ! -f "rars.jar" ]; then
+	echo "Error: The rars file doesn't exists in current folder"
+	exit 1
+fi
+
+java -jar rars.jar nc ic "$1"

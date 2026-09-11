@@ -6,9 +6,9 @@ int: .word 157                 # Define inteiro. word =
 
 .text                          # Início do seg de texto
 .align 2                       # Padding de 2^2 = 4 bytes dauqi em diante. (Obs: Todas as instrucoes tem 4 bytes)
-.globl main
+.global _start
 
-main:
+_start:
         addi a7, x0, 4  # a7 = 0 + 4 (4 = ecall de PrintString)
         la a0, string   # Load Address. Carrega endereço de memória de rótulo em registrador
         ecall

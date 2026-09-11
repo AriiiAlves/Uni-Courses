@@ -86,7 +86,7 @@ Comparadores
 - `a7` - Armazena número da ecall
 - `ecall` - Chama a ecall
 
-![Ecalls](./ecalls.png)
+![Ecalls](./ecalls-image.png)
 
 ## Alocando na stack
 

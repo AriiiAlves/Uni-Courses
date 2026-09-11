@@ -16,16 +16,16 @@ int main(){
 	
 	// Evolutionary Algorithm Config
 	int n = 100; // Número de indivíduos (deve ser par)
-	int generation = 0; // Número da geração
+	int generation = 1; // Número da geração
 	//double mutationTax = 0.001; // 1/L (size of cromossomial)
 	int delayRange = 250; // Generations until delay
-	int delay = 250; // ms
+	int delay = 0; // ms
 	int batch = 10; // Generations before crossover
 		
 	// Neural Network Config
 	int nBitsW1 = 10;
 	int nBitsW2 = 10;
-	int nNeuronsL1 = 12; // Hidden layer
+	int nNeuronsL1 = 6; // Hidden layer
 	int nNeuronsL2 = 8; // 8 possible outputs (moving 0-7)
 
 	// Map
@@ -110,8 +110,6 @@ int main(){
 				mapInstance.cleanMap();
 			}
 
-			// Increments Generation
-			generation++;
 			// Resets survivors
 			survivors = n;
 		}
@@ -139,6 +137,9 @@ int main(){
 		
 		// Resets total score
 		for(int i = 0; i < n; i++) population[i].totalScore = 0; 
+		
+		// Increments Generation
+		generation++;
 	}
 
 	dFile.close();

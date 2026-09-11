@@ -58,7 +58,7 @@ The evolutionary algorithm consists in 5 steps:
 
 It was created a dymanic mutation operator, that follow the formula:
 
-$$mutationTax = min(\frac{avgScore}{bestScore-avgScore} * mutationUnit, mutationMax)$$
+$$mutationTax = min(\frac{\text{avgScore}}{\text{bestScore}-\text{avgScore}} \cdot \text{mutationUnit}, \text{mutationMax})$$
 
 Where $mutationUnit = 1/L$, $L$ = total number of cromossomial bits, and $max$ = max tax of mutation designed for the algorithm. It represents a chance of 1 bit suffer mutation.
 

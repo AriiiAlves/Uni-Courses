@@ -104,7 +104,7 @@ Desempilhando
 
 ## Tipos das instruções
 
-![Tipos de instruções]("./images/instruction_types.png")
+![Tipos de instruções](./images/instruction-types.png)
 
 ### Tipo R
 

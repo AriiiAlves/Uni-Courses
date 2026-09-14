@@ -108,12 +108,12 @@ Desempilhando
 
 ### Tipo R
 
-- `opcode - Código da operação
-- `rd - Endereço do registrador destino
-- `funct3 - Auxílio para definição da operação
-- `rs1 - Endereço do primeiro registrador de origem
-- `rs2 - Endereço do segundo registrador de origem
-- `funct7 - Auxílio para definição da operação
+- `opcode` - Código da operação
+- `rd` - Endereço do registrador destino
+- `funct3` - Auxílio para definição da operação
+- `rs1` - Endereço do primeiro registrador de origem
+- `rs2` - Endereço do segundo registrador de origem
+- `funct7` - Auxílio para definição da operação
 
 Ex: add s2, s1, 0
 
@@ -179,10 +179,24 @@ Ex: lui s0, 0x01234
 
 - `opcode` - Código da operação
 - `rd` - Endereço do registrador destino
-- `imm[20]`, `imm[10:1], `imm[11]`, `imm[19:12]` - Valor imediato
+- `imm[20]`, `imm[10:1]`, `imm[11]`, `imm[19:12]` - Valor imediato
 
 Ex: jal s0, -4
 
 ```
 1 1111111100 1 11111111 01000 1101111
-``` 
+```
+
+## Notas avulsas
+
+### -4 em binário (20 bits)
+
+Inverte e soma 1.
+
+```
+00000000000000000100 -> 4
+11111111111111111011 -> Complemento
++                  1
+--------------------
+11111111111111111100 -> -4
+```

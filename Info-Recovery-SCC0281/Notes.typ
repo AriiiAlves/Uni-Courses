@@ -1,4 +1,22 @@
-= Aula 1 - Modelo booleano
+= Introdução
+
+Recuperação de dados
+- Ex: SQL
+- Condições formalmente especificadas
+- Correspondência exata
+- Resultado normalmente não ranqueado
+- Estrutura e esquema definidos
+- Correção lógica
+
+Recuperação de informação
+- Ex: máquinas de busca na web
+- Necessidades ambíguas
+- Correspondência por relevância
+- Resultado geralmente ranqueado
+- Texto, mídia e metadados heterogêneos
+- Utilidade e relevância para o usuário
+
+= Aula 1 - Modelagem e Modelo booleano
 
 Modelagem:
 
@@ -56,6 +74,12 @@ docID + frequência -> TF-IDF e BM25
 docID + posições -> consultas por frase e proximidade
 docID + campos -> busca em título, resumo e corpo
 
+== Exemplo
+
+```
+|Term| -> |(doc1_id, freq)| -> |(doc2_id, freq)|
+```
+
 == Modelo Booleano
 
 - Uso de NOT, AND, OR na Query.
@@ -88,6 +112,21 @@ Ao invés de fazer `Brutus AND (NOT Caesar)`, o que é ineficiente, dá pra faze
 Aqui não há jeito, tem que lidar com documentos que não existem na lista de documentos de Caesar, ou seja lidar com o universo D.
 
 - A AND B AND C AND D -> Tende a ser mais eficiente executar primeiro as duplas mais raras (conjuntos menores)
+
+
+=== Vantagens e Desvantagens
+
+Vantagens
+
+- Representação simples
+- Indexação eficiente
+- Boa recuperação de termos específicos
+
+=== Desvantagens
+
+- Sinonímia e polissemia
+- Dependência de correspondência exata
+- Dificuldade semântica
 
 === Problemas
 
@@ -286,6 +325,8 @@ Fazemos a divisão do vetor de termos ponderados pela norma.
 - Pesos TF-IDF: $w_(i,j) = (1+log f_(i,j)) dot log(N/n_i)$
 
 #figure(image("/assets/vectorial-ranking.png"))
+
+Obs: $w_(i,j)$ é o peso TF-IDF calculado de TODOS os tokens do documento. Não somente dos termos iguais aos da query.
 
 == Vantagens e desvantagens
 

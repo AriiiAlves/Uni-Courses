@@ -95,3 +95,18 @@ The best score was reached by the mid L1 term: `12` neurons.
 - Number of moves before pieces position update: `3`
 - Max distance of sensors: `10`
 - Number of sensors: `8` (front, back, left, right, front-right, front-left, back-right, back-left)
+
+## EA-Data-103.csv, EA-Best-Weights-103.csv
+
+- Number of individuals: `100`
+- Batch: `5`
+- Number of W1 Bits: `10`
+- Number of W2 Bits: `10`
+- Number of L1 Neurons: `12`
+- Number of L2 (Outputs) Neurons: `8`
+- Map Widht: `64`
+- Map Height: `64`
+- Tax of inserting new pieces: `0.2`
+- Number of moves before pieces position update: `3`
+- Max distance of sensors: `10`
+- Number of sensors: `8` (front, back, left, right, front-right, front-left, back-right, back-left)

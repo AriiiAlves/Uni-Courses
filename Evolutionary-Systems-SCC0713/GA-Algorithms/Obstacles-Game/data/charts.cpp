@@ -52,7 +52,9 @@ int main(int argc, char* argv[]) {
 	FILE* gp = popen("gnuplot -persistent", "w");
 	if(!gp) return 1;
 
-	fprintf(gp, "set title 'Fitness over generations'\n");
+	string title = "set title '" + fileName + " - Fitness x Generations'\n";
+	
+	fprintf(gp, title.c_str());
 	fprintf(gp, "set xlabel 'Generation'\n");
 	fprintf(gp, "set ylabel 'Score'\n");
 

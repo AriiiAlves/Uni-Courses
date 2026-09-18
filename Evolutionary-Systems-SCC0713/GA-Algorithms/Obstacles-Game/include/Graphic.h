@@ -2,6 +2,7 @@
 
 #include <SDL2/SDL.h>
 #include <vector>
+#include <iostream>
 #include "Player.h"
 
 class Draw{

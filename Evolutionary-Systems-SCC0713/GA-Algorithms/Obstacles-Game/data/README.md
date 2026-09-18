@@ -10,6 +10,8 @@ Neural network config:
 
 Batches: Help to avoid lucky players. The roulette will select players after  `n` rounds.
 
+# Changing L1 Neurons
+
 ## EA-Data-001.csv, EA-Best-Weights-001.csv
 
 - Number of individuals: `100`
@@ -57,3 +59,39 @@ Batches: Help to avoid lucky players. The roulette will select players after  `n
 - Max distance of sensors: `10`
 - Number of sensors: `8` (front, back, left, right, front-right, front-left, back-right, back-left)
 - Total of generations: `136`
+
+## Conclusion
+
+The best score was reached by the mid L1 term: `12` neurons.
+
+# Changing batch number
+
+## EA-Data-101.csv, EA-Best-Weights-101.csv
+
+- Number of individuals: `100`
+- Batch: `1`
+- Number of W1 Bits: `10`
+- Number of W2 Bits: `10`
+- Number of L1 Neurons: `12`
+- Number of L2 (Outputs) Neurons: `8`
+- Map Widht: `64`
+- Map Height: `64`
+- Tax of inserting new pieces: `0.2`
+- Number of moves before pieces position update: `3`
+- Max distance of sensors: `10`
+- Number of sensors: `8` (front, back, left, right, front-right, front-left, back-right, back-left)
+
+## EA-Data-102.csv, EA-Best-Weights-102.csv
+
+- Number of individuals: `100`
+- Batch: `3`
+- Number of W1 Bits: `10`
+- Number of W2 Bits: `10`
+- Number of L1 Neurons: `12`
+- Number of L2 (Outputs) Neurons: `8`
+- Map Widht: `64`
+- Map Height: `64`
+- Tax of inserting new pieces: `0.2`
+- Number of moves before pieces position update: `3`
+- Max distance of sensors: `10`
+- Number of sensors: `8` (front, back, left, right, front-right, front-left, back-right, back-left)

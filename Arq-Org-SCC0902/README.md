@@ -149,7 +149,7 @@ Ex: sw s2, 0(sp)
 00000000 10010 00010 010 00000 0100011
 ```
 
-## Tipo B
+### Tipo B
 
 - `opcode` - Código da operação
 - `imm[4:0]`, `imm[11]`, `imm[11:5]`, `imm[12]` - Valor imediato
@@ -163,7 +163,7 @@ Ex: beq s1, s0, 4
 0 000000 01000 01001 000 0100 0 1100011
 ```
 
-## Tipo U
+### Tipo U
 
 - `opcode` - Código da operação
 - `rd` - Endereço do registrador destino
@@ -175,7 +175,7 @@ Ex: lui s0, 0x01234
 [0000 0001 0010 0011 0100] 01000 0110111
 ```
 
-## Tipo J
+### Tipo J
 
 - `opcode` - Código da operação
 - `rd` - Endereço do registrador destino
@@ -187,11 +187,60 @@ Ex: jal s0, -4
 1 1111111100 1 11111111 01000 1101111
 ```
 
+## Monociclo
+
+A instrução é executada em um único ciclo de clock. Final de ciclo: tudo o que está nas conexões (linhas) é salvo nos registradores. 
+
+Componentes: PC, Banco registradores, ULA, UC, Memória, I/O
+
+Conjunto reduzido de instruções:
+
+- Tipo R: add, sub, and, or
+- Tipo I: lw
+- Tipo S: sw
+- Tipo B: beq
+
+Arquitetura do banco de registradores:
+
+READ
+1. 32 registradores
+2. A saída de cada registrador vai para 2 MUX (saída duplicada)
+3. 5 bits entram no Select do primeiro MUX -> Read Register 1 (5 bits)
+4. 5 bits entram no Select do segundo MUX -> Read Register 2 (5 bits)
+5. Saída do primeiro MUX -> Read Data 1 (32 bits)
+6. Saída do segundo MUX -> Read Data 2 (32 bits)
+
+WRITE
+1. 32 registradores
+2. Entrada Write Register (5 bits)
+3. Entrada Write Data (32 bits)
+
+ULA:
+
+1. Recebe 2 entradas (32 bits)
+2. Devolve saída (32 bits)
+
+Mem. Instrução:
+
+1. Recebe endereço do PC (32 bits)
+2. Devolve instrução (32 bits)
+
+Mem. Dados:
+
+1. Recebe endereço da ULA (32 bits)
+2. Devolve Read Data (32 bits)
+
+ou...
+
+1. Recebe endereço (32 bits)
+2. Escreve Write Data (32 bits)
+
+
 ## Notas avulsas
 
 ### -4 em binário (20 bits)
 
-Inverte e soma 1.
+Ao invés de usar bit de sinal, podemos usar complemento de dois: Inverte e soma 1.
 
 ```
 00000000000000000100 -> 4

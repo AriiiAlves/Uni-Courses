@@ -63,3 +63,8 @@ $$mutationTax = min(\frac{\text{avgScore}}{\text{bestScore}-\text{avgScore}} \cd
 Where $mutationUnit = 1/L$, $L$ = total number of cromossomial bits, and $max$ = max tax of mutation designed for the algorithm. It represents a chance of 1 bit suffer mutation.
 
 This formula increases the mutation if the score diversity decreases, and "stop" mutation if there is a player being much better than others (is desired to approach the other individuals to this one).
+
+### THINGS TO CHANGE
+
+- Int instead binary digits. (OR curve to low modifying at most significant bits). Mutation = n +- rand * 0.2
+- Better mutation tax

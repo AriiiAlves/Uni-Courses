@@ -143,7 +143,7 @@ O segredo para trabalhar com exercícios de probabilidade é, primeiro, extrair 
 
 	($p_x (x)$ virá das distribuições). Caso contínuo:
 
-	$ mu = E(X) = integral_(- infinity)^(+ infinity) x f_x (x) $
+	$ mu = E(X) = integral_(- infinity)^(+ infinity) x f_x (x) d x $
 
 	Propriedades:
 
@@ -154,6 +154,8 @@ O segredo para trabalhar com exercícios de probabilidade é, primeiro, extrair 
 
 #definition("Variância")[
 	$ sigma^2 = "Var"(X) = E((X - E(X))^2) \ sigma^2 = E(X^2)-[E(X)]^2 $
+
+	Obs: $E(X^2) = sum x^2 p_x (x)" ou "integral_(-infinity)^(+infinity) x^2 f_x (x) d x$
 
 	Propriedades:
 	+ Se $X = a$ (constante), então $"Var"(X) = "Var"(a) = 0$
@@ -186,6 +188,9 @@ O segredo para trabalhar com exercícios de probabilidade é, primeiro, extrair 
 	$ p_x (x) = cases(p^x (1-p)^(1-x)", "x in {0,1}, 0", caso contrário") $
 
 	Notação: $X ~ B e r (p)$
+
+	$ mu = p $
+	$ sigma^2 = p(1-p) $
 ]
 
 #definition("Distr. Binominal")[
@@ -196,6 +201,9 @@ O segredo para trabalhar com exercícios de probabilidade é, primeiro, extrair 
 	(Obs: diferente de Bernoulli, usa-se $x in {0,1,...,M}$ na potência!)
 
 	Notação: $X ~ B i n (M, p)$
+
+	$ mu = M p $
+	$ sigma^2 = M p(1-p) $
 
 	#proof[
 		O fabricante indica que a taxa de equipamentos em perfeito estado é 97%.
@@ -220,6 +228,9 @@ O segredo para trabalhar com exercícios de probabilidade é, primeiro, extrair 
 
 	Notação: $X ~ G e o (p)$
 
+	$ mu = (1-p)/p $
+	$ sigma^2 = (1-p)/p^2 $
+
 	#proof[
 		Um pesquisador está realizando experimentos químicos independentes e sabe que a probabilidade de que cada experimento apresente uma reação positiva é 0.3. Qual a probabilidade de que menos de 3 reações negativas ocorram antes da primeira positiva?
 
@@ -236,6 +247,9 @@ O segredo para trabalhar com exercícios de probabilidade é, primeiro, extrair 
 	) $
 
 	Notação: $X ~ B N(r,p)$
+
+	$ mu = r((1-p)/p) $
+	$ sigma^2 = r((1-p)/p^2) $
 
 	#proof[
 		Em uma série do campeonato, o time que ganhar 4 em 7 jogos será o vencedor. Se a probabilidade do time A ganhar de B é 55% e A e B se enfrentarão em uma série de 7 jogos, qual a probabilidade de que A vença a série em 6 jogos?
@@ -256,6 +270,9 @@ O segredo para trabalhar com exercícios de probabilidade é, primeiro, extrair 
 	
 	Notação: $x ~ H g e o (m,n,r)$
 
+	$ mu = r m/n $
+	$ sigma^2 = (r m(n-m)(n-r))/(n^2(n-1)) $
+
 	#proof[
 		Considere que em um lote de 20 peças existam 4 defeituosas. Selecionando 5 dessas peças, sem reposição, qual a probabilidade de escolher 2 defeituosas?
 		
@@ -266,7 +283,7 @@ O segredo para trabalhar com exercícios de probabilidade é, primeiro, extrair 
 ]
 
 #definition("Distr. Poisson")[
-	Muito usada quando se deseja contar o número de eventos de certo tipo que ocorrem em um certo período de tempo ou superfície/volume. Utiliza-se o parâmetro $lambda>0$.
+	Muito usada quando se deseja contar o número de eventos de certo tipo que ocorrem em um certo período de tempo ou superfície/volume. Utiliza-se o parâmetro $lambda>0$ (média).
 
 	$ p_x (x) = cases(
 		(e^(-lambda)lambda^x)/x!", "x in {0,1,...},
@@ -274,6 +291,9 @@ O segredo para trabalhar com exercícios de probabilidade é, primeiro, extrair 
 	) $
 
 	Notação: $X ~ P o i(lambda)$
+
+	$ mu = lambda $
+	$ sigma^2 = lambda $
 
 	#proof[
 		Uma central telefônica recebe, em média, cinco chamadas p/min. Supondo que a distribuição Poisson seja adequada nessa situação, obtenha a probabilidade de que a central telefônica receba no máximo duas chamadas durante um intervalo de um minuto.
@@ -285,6 +305,7 @@ O segredo para trabalhar com exercícios de probabilidade é, primeiro, extrair 
 
 	+ Se $X_1,...,X_n$ são variáveis aleatórias indepentes e $X_i ~ P o i(lambda_i)$, então $ Y = X_1 + ... + X_n ~ P o i (lambda_1+...+lambda_n) $
 	+ Se $X ~ B i n(M, p)$, com $M >> p$, pode-se aproximar para Poisson com $lambda = M p$
+	+ $E(x) = V a r(x) = lambda$
 ]
 
 == Distribuições Contínuas
@@ -300,17 +321,23 @@ O segredo para trabalhar com exercícios de probabilidade é, primeiro, extrair 
 	Obs: Área = $(beta-alpha) dot 1/(beta-alpha)=1$
 	
 	Notação: $X ~U(alpha,beta)$
+
+	$ mu = (alpha+beta)/2 $
+	$ sigma^2 = (beta-alpha)^2/12 $
 ]
 
 #definition("Distr. Exponencial")[
-	Uma variável aleatória contínua X tem distribuição exponencial com parâmetro $lambda>0$ se:
+	Uma variável aleatória contínua X tem distribuição exponencial com parâmetro $lambda>0$ (média) se:
 
 	$ f_x (x) = cases(
-		lambda e^(-lambda x)", "x>=0,
+		1/lambda e^(-x/lambda)", "x>=0,
 		0", caso contrário"
 	) $
 
 	Notação: $X ~ E x p(lambda)$
+
+	$ mu = lambda $
+	$ sigma^2 = lambda^2 $
 ]
 
 #definition("Distr. Normal/Gaussiana")[
@@ -358,4 +385,51 @@ Sejam X e Y duas variáveis aleatórias. Quando há interesse na variação conj
 	$ p_(x,y) = P(X=x, Y=y) $
 
 
+]
+
+= Notas adicionais
+
+#theorem("Expansão de termo na esperança")[
+	Se $C(X) = (X+5)^2$ é o custo da função, então $E(C(X))=E(X^2+10X+25)=E(X^2)+10E(X)+25$
+]
+
+#theorem("Tabela de distribuição normal padrão")[
+	+ A tabela fornece apenas áreas superiores ao ponto $P(Z>=z)$. Assim, se queremos $P(Z<2)$, devemos utilizar $1-P(Z>=2)$.
+	+ Para usar a tabela, deve-se padronizar a variável aleatória X: 
+
+	$ Z = (X-mu)/sigma $
+]
+
+#theorem("Z-score em Machine Learning")[
+	O Z score é útil para otimizar modelos de machine-learning.
+
+	$ Z = (X-mu)/sigma $
+
+	+ Eliminação de diferenças de escala: Se uma featura varia entre 0 e 1 e outra entre 0 e 100.000, o gráfico de erro forma um "vale oval e comprimido". O algoritmo perde muito tempo até encontrar o mínimo. Com dados padronizados, as diferenças de escala somem, e o gráfico fica equilibrado (esférico), agilizando o GD. Isso impede que sinais de alta amplitude dominem o aprendizado do modelo.
+	+ Detecção de outliers: Valores com $|Z| > 3$ são anomalias que se desviam drasticamente da média da população original, e podem ser identificados.
+]
+
+#theorem("Nota de exercício de distr. normal")[
+	Um protocolo de roteamento distribui pacotes de dados de modo que o tempo de latência siga uma distribuição Normal com desvio-padrão de 10 ms. O administrador precisa garantir que apenas 10% dos pacotes tenham latência inferior a 500 ms.
+	
+	Qual deve ser o tempo médio configurado no sistema?
+
+	+ $sigma = 10 "ms"$
+	+ Na tabela, não se pode consultar simplesmente $f_x (Z) = 0.1$, pois a tabela dá $f_x (X>=500)$. Assim, temos que buscar$f_x (X<=500) = 1 - f_x (X>=500)$: 
+
+	$ 1-f_x (Z) = 0.1 arrow.r f_x (Z) = 0.9 arrow.r Z = -1.28 $
+	
+	+ $Z = (X-mu)/sigma arrow.r -1.28 = (500-mu)/10 arrow.r mu = 512.8$
+]
+
+
+#theorem("Nota de exercício de distr. normal - Acúmulo de média/variância")[
+	Um servidor em nuvem suporta até 500 GB de memória RAM para instâncias virtuais. O consumo de cada instância é Normal, com média 70 GB e variância 100 GB².
+
+Qual é a probabilidade aproximada de 7 instâncias independentes ultrapassarem, em conjunto, o limite de 500 GB?
+
+	+ Nova média: $7 dot 70 "GB" = 490 "GB"$
+	+ Nova variância: $7 dot 100 "GB"^2 arrow.r sigma = sqrt(700) = 26.48 "GB" $
+	+ $Z = (500-490)/26.48 = 0.378$	
+	+ $f_x (X>=500) = P(Z>=0.378) = 0.3527$
 ]

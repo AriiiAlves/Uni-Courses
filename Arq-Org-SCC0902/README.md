@@ -24,11 +24,11 @@
 - `.align n` - Alinha a memória em `2^n` bytes. Força o próximo dado/instrução a começar em um endereço de memória alinhado, utilizando padding.
     - `n = 0` para strings.
     - `n = 2` para instruções.
-- `label: .asciz str` - Guarda string e encerra ela com `\0`
+- `label: .asciz "str"` - Guarda string e encerra ela com `\0`
 - `label: .byte b1,...,bn` - Reserva e inicializa cada byte sequencialmente.
 - `label: .word w1,...,wn` - Reserva e inicializa cada word sequencialmente.
 - `label: .double d1,...,dn` - Reserva e inicializa cada double sequencialmente.
-- `label: .space n` - Reserva imm bytes
+- `label: .space n` - Reserva n bytes
 
 ## Registradores
 
@@ -51,9 +51,12 @@ Aritmética
 - `mul rd, rs1, rs2` - `rd = rs1 * rs2`
 - `div rd, rs1, rs2` - `rd = rs1 / rs2`
 - `rem rd, rs1, rs2` - `rd = rs1 % rs2`
+- `remu rd, rs1, rs2` - `rd = rs1 % rs2` (unsigned remainder)
+- `xor rd, rs1, rs2` - `rd = rs1 xor rs2`
 
 Load/Store
 
+- `la rd, label` - `rd = label_addr`
 - `lw rd, imm(rs1)` - `rd = mem[rs1+imm]` (word = 4 bytes)
 - `lb rd, imm(rs1` - `rd = mem[rs1+imm]` (byte)
 - `sw rs2, imm(rs1)` - `mem[rs1+imm] = rs2`
@@ -75,6 +78,7 @@ Branch (imm pode também ser um label)
 - `ble rs1, rs2, imm` - `if(rs1 <= rs2) pc += imm`
 - `bgt rs1, rs2, imm` - `if(rs1 > rs2) pc += imm`
 - `bge rs1, rs2, imm` - `if(rs1 >= rs2) pc += imm`
+- `bnez rs1, imm` - `if(rs1 != 0) pc += imm`
 
 Comparadores
 

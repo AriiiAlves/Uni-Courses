@@ -1,4 +1,5 @@
 #import "./lib.typ": *
+#import "@preview/diverential:0.3.0": *
 
 #show: project.with(
 	title: "Notas de Estatística",
@@ -375,19 +376,7 @@ O segredo para trabalhar com exercícios de probabilidade é, primeiro, extrair 
 	]
 ]
 
-= Variáveis Aleatórias Bidimensionais
-
-Sejam X e Y duas variáveis aleatórias. Quando há interesse na variação conjunta de X e Y, estudamos (X,Y) como uma variável aleatória bidimensional.
-
-#definition("Variável aleatória bidimensional discreta")[
-	A variável aleatória bidimensional discreta (X, Y) tem f.m.p. conjunta definida por:
-
-	$ p_(x,y) = P(X=x, Y=y) $
-
-
-]
-
-= Notas adicionais
+== Notas adicionais
 
 #theorem("Expansão de termo na esperança")[
 	Se $C(X) = (X+5)^2$ é o custo da função, então $E(C(X))=E(X^2+10X+25)=E(X^2)+10E(X)+25$
@@ -432,4 +421,134 @@ Qual é a probabilidade aproximada de 7 instâncias independentes ultrapassarem,
 	+ Nova variância: $7 dot 100 "GB"^2 arrow.r sigma = sqrt(700) = 26.48 "GB" $
 	+ $Z = (500-490)/26.48 = 0.378$	
 	+ $f_x (X>=500) = P(Z>=0.378) = 0.3527$
+]
+
+= Variáveis Aleatórias Bidimensionais
+
+Sejam X e Y duas variáveis aleatórias. Quando há interesse na variação conjunta de X e Y, estudamos (X,Y) como uma variável aleatória bidimensional.
+
+#definition("Variável aleatória bidimensional discreta")[
+	A variável aleatória bidimensional discreta (X, Y) tem f.m.p. conjunta definida por:
+
+	$ p_(x,y) = P(X=x, Y=y) $
+
+	Ela é utilizada quando há interesse na variação conjunta de X e Y.
+
+	Propriedades:
+
+	+ $ p_(x,y) (x,y) >= 0$	
+	+ $ sum_(x_i)sum_(y_i) p_(x,y) (x_i,y_i) = 1$
+
+	#proof[
+		$ X = cases(
+			1", se a peça passa no 1 teste",
+			0", se a peça falha no 1 teste"
+		) $
+
+		$ Y = cases(
+			1", se a peça passa no 2 teste",
+			0", se a peça falha no 2 teste"
+		) $
+		
+		#set align(center)
+		#table(
+			columns: (auto, auto, auto),
+			inset:10pt,
+			align:horizon,
+			table.header([$p_(x,y) (x,y)$],table.cell(colspan: 2)[*Y*]),
+			[X], [0], [1],
+			[0], [0.1], [0.2],
+			[1], [0.2], [0.5]
+		)
+		#set align(left)
+	]
+]
+
+#definition("Distribuições Marginais")[
+	Para uma variável aleatória bidimensional, a probabilidade marginal de X é dada por:
+
+	$ p_x (x) = sum_(y_i) p_(x,y) (x,y) $
+
+	E a probabilidade marginal de y é:
+
+	$ p_y (y) = sum_(x) p_(x,y) (x,y) $
+]
+
+#definition("Variável aleatória bidimensional contínua")[
+	A variável aleatória bidimensional contínua (X,Y) tem f.d.p. conjunta dada por $f_(x,y) (x,y)$ e f.d.a $F_(x,y) (x,y) = P(X <= x, y <= y)$, satisfazendo:
+
+	+ $f_(x,y) (x,y) >= 0$
+	+ $integral_(-infinity)^(infinity) integral_(-infinity)^(infinity) f_(x,y) (x,y) d y d x = integral_(-infinity)^(infinity) integral_(-infinity)^(infinity) f_(x,y) (x,y) d x d y = 1$
+	+ $F(x,y) (x,y) = P(X <= x, Y <= y) = P(X < x, Y <= y) = P(X<=x, Y<y) = P(X<x,Y<y)$
+
+	Propriedades:
+
+	+ $f_(x,y) (x,y) = dvp(F_(x,y) (x,y), x, y) = dvp(F_(x,y) (x,y), y, x) $
+	+ $F_(x,y) (x,y) = integral_(-infinity)^(x) integral_(-infinity)^(y) f_(x,y) (t,w) d w d t$
+	+ $P(a <= X <= b, c<= Y <= d) = integral_a^b integral_c^d f_(x,y) (x,y) d y d x$
+
+	Todas as integral são invertíveis por Fubini.
+]
+
+#definition("Densidades Marginais")[
+	Seja (X,Y) a variável aleatória contínua bidimensional com f.d.p. conjunta $f_(x,y) (x,y)$. A f.d.p. marginal de X é dada por:
+
+	$ f_x (x) = integral f_(x,y) d y $
+
+	E a f.d.p. marginal de Y é:
+
+	$ f_y(y) = integral f_(x,y) (x,y) d x $
+]
+
+#definition("Independência Probabilística")[
+	Duas variáveis aleatórias X e Y são independentes se a f.m.p. (ou f.d.p.) conjunta de (X,Y) for fatorável no produto das f.m.p. (ou f.d.p.) marginais de de X e Y:
+
+	$ p_(x,y) (x,y) = p_x (x) dot p_y (y) $
+	$ f_(x,y) (x,y) = f_x (x) dot f_y (y) $
+]
+
+#definition("Esperança")[
+	$ E(h(X,Y)) = sum_x_i sum_y_i h(x,y) p_(x,y) (x,y) $
+
+	Ou
+
+	$ E(h(X,Y)) = integral integral h(x,y) f_(x,y) d y d x $
+
+]
+
+#definition("Covariância")[
+	$ sigma_(X Y) = C o v(X,Y) = E((X-mu_x)(Y-mu_y)) = E(X Y) - E(X)E(Y) = E(X Y) - mu_x mu_y $
+
+	E a correlação entre X e Y por:
+
+	$ rho_(x,y) = (C o v(X,Y))/(sqrt(V a r(X))sqrt(V a r(Y))) = sigma_(x y)/(sigma_x sigma_y) $
+]
+
+#definition("Independência e correlação")[
+	Se X e Y são duas variáveis aleatórias independentes, então a correlação entre X e Y é nula. A volta não vale.
+]
+
+#definition("Variância de X e Y")[
+	Propriedades:
+
+	+ $V a r(X + Y) = V a r(X) + V a r(Y) + 2 C o v(X,Y)$
+	+ $V a r(X - Y) = V a r(X) + V a r(Y) - 2 C o v(X,Y)$
+	+ $V a r(a X plus.minus b Y) = a^2 V a r(X) + b^2 V a r(Y) plus.minus 2 a b C o v(X,Y)$
+	+ Se X,Y independentes: $C o v(X,Y) = 0$
+]
+
+#definition("Combinação linear de variáveis aleatórias normais independentes")[
+	Sejam $X_1, X_2, ..., X_n$ n variáveis aleatórias independentes tais que $X_i ~ N(mu, sigma^2)$.
+	
+	Considere $Y = sum_(i=1)^n X_i$. Temos que:
+
+	$ E(Y) = E(sum_(i=1)^n X_i) = sum_(i=1)^n E(X_i) = sum_(i=1)^n mu = n mu $
+
+	e
+
+	$ V a r(Y) = V a r(sum_(i=1)^n X_i) = sum_(i=1)^n V a r(X_i) = sum_(i=1)^n sigma^2 = n sigma^2 $
+
+	Padronizando:
+
+	$ (Y - E(Y))/sqrt(V a r(Y)) = (Y - n mu)/(mu sqrt(n)) ~ N(0,1) $
 ]

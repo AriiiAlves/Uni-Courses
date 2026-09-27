@@ -239,6 +239,17 @@ ou...
 1. Recebe endereço (32 bits)
 2. Escreve Write Data (32 bits)
 
+### add
+
+![add](./images/arch-add.jpeg)
+
+### lw/sw
+
+![lw/sw](./images/arch-lw-sw.jpeg)
+
+### branch
+
+![branch](./images/arch-branch.jpeg)
 
 ## Notas avulsas
 

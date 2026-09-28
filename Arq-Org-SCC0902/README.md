@@ -1,5 +1,40 @@
 # Notas de aula
 
+## Arquitetura de Von-Neumann
+
+Design de computador onde as instruções e dados são armazenados no mesmo espaço de memória. Os componentes são:
+
+- CPU
+- Memória
+- Dispositivos I/O
+
+### CPU
+
+![CPU](./images/von-neumann-cpu.png)
+
+### CU (Control Unit)
+
+Gerencia como o processador funciona mandando sinais de controle (0/1) ao decodificar instruções.
+
+### ALU (Arithmetic and Logic Unit)
+
+Parte da CPU que lida com cálculos. Performa adição, subtração e operações lógicas, como comparações e deslocamento de bits em dados.
+
+### Registers
+
+Tipo mais rápido de memória localizado na CPU.
+
+- **PC (Program Counter)** - Endereço da próxima instrução a ser executada
+- **IR (Instruction Register)** - Mantém a instrução atual sendo executada
+- **MAR (Memory Address Register)** - Armazena o endereço da localização de memória sendo acessada
+- **MDR (Memory Data Register)** - Armaza dados transferidos da/para a memória
+- **Accumulator** - Armazena resultados intermediários de aritmética e operações lógicas
+- **General Purpose Registers** - Uso para armazenamento temporário de dados
+
+### Bus
+
+Sistema de comunicação que transfere dados, endereços, e sinais de controle entre a CPU, memória e dispositivos I/O. Na arquitetura de Von Neumann, um único bus é compartilhado para ambos dados e instruções.
+
 ## Arquitetura RISC-V
 
 - Arquitetura de 32 bits
@@ -64,7 +99,7 @@ Load/Store
 
 Jump/Function
 
-- `j label` - `pc += label`
+- `j label` - `pc += label` (Obs: Usa half-words para pular. `jmp 4` - `pc += 4 * 2 bytes`)
 - `jal rd, label` - `rd = pc+4; pc += label` (salva endereço de retorno)
 - `jr ra` - `pc = ra`
 - `call symbol` - `ra = pc+4; pc = &symbol`
@@ -110,7 +145,9 @@ Desempilhando
 
 ![Tipos de instruções](./images/instruction-types.png)
 
-### Tipo R
+### Tipo R (register)
+
+Operações matemáticas e lógicas: `add`, `sub`, `and`, `or`, `sll`
 
 - `opcode` - Código da operação
 - `rd` - Endereço do registrador destino
@@ -125,7 +162,9 @@ Ex: add s2, s1, 0
 0000000 01000 01001 000 10010 0110011
 ```
 
-### Tipo I
+### Tipo I (immediate)
+
+Operações aritméticas com constantes ou instruções de leitura da memória: `addi`, `lw`, `andi`, `jalr`
 
 - `opcode` - Código da operação
 - `rd` - Endereço do registrador destino
@@ -139,7 +178,9 @@ Ex: lw s2, 0(sp)
 000000000000 00010 010 10010 0000011
 ```
 
-### Tipo S
+### Tipo S (Store)
+
+Escrever dados de um registrador para a memória: `sw`
 
 - `opcode` - Código da operação
 - `imm[4:0]` e `imm[11:5]` - Valor imediato (Separa os bits)
@@ -153,7 +194,9 @@ Ex: sw s2, 0(sp)
 00000000 10010 00010 010 00000 0100011
 ```
 
-### Tipo B
+### Tipo B (branch)
+
+Desvios condicionais: `beq`, `bne`, etc
 
 - `opcode` - Código da operação
 - `imm[4:0]`, `imm[11]`, `imm[11:5]`, `imm[12]` - Valor imediato
@@ -167,7 +210,9 @@ Ex: beq s1, s0, 4
 0 000000 01000 01001 000 0100 0 1100011
 ```
 
-### Tipo U
+### Tipo U (Upper immediate)
+
+Carregar números muito grandes diretamente nos bits superiores de um registrador: `lui`, `auipc`
 
 - `opcode` - Código da operação
 - `rd` - Endereço do registrador destino
@@ -180,6 +225,8 @@ Ex: lui s0, 0x01234
 ```
 
 ### Tipo J
+
+Pulos incondicionais de longo alcance (chamadas de função e desvios obrigatórios): `jal`
 
 - `opcode` - Código da operação
 - `rd` - Endereço do registrador destino
@@ -264,3 +311,6 @@ Ao invés de usar bit de sinal, podemos usar complemento de dois: Inverte e soma
 --------------------
 11111111111111111100 -> -4
 ```
+
+### jmp
+

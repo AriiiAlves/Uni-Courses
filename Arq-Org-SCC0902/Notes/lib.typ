@@ -211,19 +211,28 @@
   // Text setup
   set par(justify: true, leading: 1.2em)
 
-  // Code block styling - with inline and block support
-  show raw.where(block: true): block.with(
-    fill: colors.code-bg,
-    inset: 10pt,
-    radius: 4pt,
-    width: 100%,
-    stroke: 0.5pt + gray,
-  )
+  // Github Light Mode inspired colors
+  let github-code-bg = rgb("#f6f8fa")
+  let github-code-border = rgb("#d0d7de")
+  let github-text = rgb("#24292f")
 
+  // multi-line code block
+  show raw.where(block: true): it => block(
+    fill: github-code-bg,
+    inset: 12pt,
+    radius: 6pt,
+    width: 100%,
+    stroke: 0.5pt + github-code-border,
+  )[
+    #set text(fill: github-text, size: 0.9em)
+    #it
+  ]
+
+  // inline code block
   show raw.where(block: false): box.with(
-    fill: colors.code-bg,
+    fill: rgb("#afb8c133"), // Cinza claro translúcido estilo GitHub
     inset: (x: 4pt, y: 2pt),
-    radius: 2pt,
+    radius: 4pt,
   )
 
   // Heading numbering

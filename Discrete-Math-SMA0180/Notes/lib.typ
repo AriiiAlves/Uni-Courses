@@ -174,7 +174,7 @@
   width: 100%,
   below: 1em,
 )[
-  #text(fill: colors.secondary.darken(10%), weight: "bold", style: "italic")[Proof.]\
+  #text(fill: colors.secondary.darken(10%), weight: "bold", style: "italic")[Example.]\
   #body
   #h(1fr) $square$ // QED symbol
 ]
@@ -211,28 +211,19 @@
   // Text setup
   set par(justify: true, leading: 1.2em)
 
-  // Github Light Mode inspired colors
-  let github-code-bg = rgb("#f6f8fa")
-  let github-code-border = rgb("#d0d7de")
-  let github-text = rgb("#24292f")
-
-  // multi-line code block
-  show raw.where(block: true): it => block(
-    fill: github-code-bg,
-    inset: 12pt,
-    radius: 6pt,
-    width: 100%,
-    stroke: 0.5pt + github-code-border,
-  )[
-    #set text(fill: github-text, size: 0.9em)
-    #it
-  ]
-
-  // inline code block
-  show raw.where(block: false): box.with(
-    fill: rgb("#afb8c133"), // Cinza claro translúcido estilo GitHub
-    inset: (x: 4pt, y: 2pt),
+  // Code block styling - with inline and block support
+  show raw.where(block: true): block.with(
+    fill: colors.code-bg,
+    inset: 10pt,
     radius: 4pt,
+    width: 100%,
+    stroke: 0.5pt + gray,
+  )
+
+  show raw.where(block: false): box.with(
+    fill: colors.code-bg,
+    inset: (x: 4pt, y: 2pt),
+    radius: 2pt,
   )
 
   // Heading numbering

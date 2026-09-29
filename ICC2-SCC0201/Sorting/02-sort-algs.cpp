@@ -1,5 +1,7 @@
 #include<vector>
 #include<iostream>
+#include<math.h>
+
 using namespace std;
 
 void swap(int &a, int &b){
@@ -133,7 +135,7 @@ void buildHeap(vector<int> &v, int size){
 
 void heapSort(vector <int> &v, int size){
 	int aux;
-	heap_size = size;
+	int heap_size = size;
 
 	buildHeap(v, size);
 
@@ -146,6 +148,162 @@ void heapSort(vector <int> &v, int size){
 		// Rearrange heap
 		rearrangeHeap(v, 0, heap_size);
 	}
+}
+
+// Radix Sort
+typedef struct node{
+	int n;
+	node* next;
+	node* prev;
+} Node;
+
+typedef struct queue{
+	Node* head;
+	Node* tail;
+} Queue;
+
+void insertQueue(Queue* queue, int num){
+	if(queue == NULL) return;
+
+	Node* node = (Node*) malloc(sizeof(Node));
+	node->n = num;
+		
+	node->prev = queue->tail;
+	node->next = NULL;
+
+	if(queue->head == NULL) queue->head = node;
+	else queue->tail->next = node;
+
+	queue->tail = node;
+}
+
+void destroyQueue(Queue* queue){
+	if(queue == NULL) return;
+	if(queue->head == NULL || queue->tail == NULL) return;
+	
+	Node* node = queue->head;
+	do{
+		Node* next = node->next;
+		free(node);
+		node = next;
+	} while(node != NULL);
+}
+
+int isEmpty(Queue* queue){
+	if(queue == NULL) return 1;
+	if(queue->head == NULL) return 1;
+	return 0;
+}
+
+// Note: Radix needs FIFO (First in First out) -> Queue!
+int popQueue(Queue* queue){
+	if(queue == NULL) return 0;
+	if(queue->head == NULL || queue->tail == NULL) return 0;
+	if(queue->head == queue->tail) {
+		int n = queue->head->n;
+		free(queue->head);
+		queue->head = NULL;
+		queue->tail = NULL;
+		return n;
+	}
+
+	Node* head = queue->head;
+	int n = head->n;
+	queue->head = head->next;
+	queue->head->prev = NULL;
+	free(head);
+	return n;
+}
+
+int get_digit(int n, int pos){
+	int digit;
+	// digit = 0 -> unit
+	int mod = pow(10, (pos+1));
+	
+	// If pos doesn't exists, returns 0
+	if(pow(10, pos) > n) return 0;
+	// Remove most-significant digits
+	digit = n - n / mod * mod;
+
+	
+	// Remove less-significant digits
+	while(digit >= 10) digit /= 10;
+	
+	// cout << "get_digit: n=" << n << ", digit=" << digit << ", pos=" << pos << ", mod=" << mod << endl;
+	
+	return digit;
+}
+
+void printQueues(Queue** queues){
+	for(int ff=0; ff<10; ff++){
+		Node* node = queues[ff]->head;
+		cout << "Queue " << ff << ": ";
+		if(node == NULL) { cout << endl; continue; }
+		do{
+			Node* next = node->next;
+			cout << "[" << node->n << "," << node->next << "]" << " ";
+			node = next;
+		} while(node != NULL);
+		cout << endl;
+	}
+}
+
+void radixSort(vector <int>&v, int size, bool debug){	
+	if(debug){
+		cout << "------------ Initial Vector ------------" << endl;
+		printVec(v, size);
+	}
+
+	// Create queues
+	Queue** queues = (Queue**) malloc(sizeof(Queue*) * 10);
+	for(int i=0; i<10; i++){ 
+		queues[i] = (Queue*) malloc(sizeof(Queue));
+		queues[i]->head = NULL;
+		queues[i]->tail = NULL;
+	}
+	
+	// Verify digits
+	int n_digits=0, max=v[0], t;
+	for(int i=1;i<size;i++) { if(v[i] > max) max = v[i]; }
+	while(max > 0) {
+		n_digits++;
+		max /= 10;
+	}
+	
+	// Main algorithm
+	for(int i=0; i< n_digits; i++){
+		// Insert into queues by digit
+		for(int j=0; j<size; j++){
+			int k = get_digit(v[j], i);
+			insertQueue(queues[k], v[j]);
+
+		}
+		
+		if(debug){
+			cout << "------------ Digit number " << i << "------------" << endl;
+			printQueues(queues);
+		}
+	
+		// Set vector
+		int c = 0;
+		for(int ff=0; ff<10; ff++){
+			while(!isEmpty(queues[ff])) { v[c] = popQueue(queues[ff]); c++; }
+		}
+
+		if(debug){
+			cout << "------------ Vector after digit number " << i << "------------" << endl;
+			printVec(v, size);
+			cout << "------------------------" << endl;
+		}
+	
+		// Clean queues
+		for(int d=0; d<10; d++){
+			destroyQueue(queues[d]);
+		}
+	}
+	
+	for(int i=0; i<10; i++) { free(queues[i]); }
+	free(queues);
 }
 
 int main(){
@@ -165,7 +323,8 @@ int main(){
 		//insertionSort(v[i], v[i].size());
 		//shellSort(v[i], v[i].size(), 3, 1);
 		//selectionSort(v[i], v[i].size());
-		buildHeap(v[i], v[i].size());
+		//heapSort(v[i], v[i].size());
+		radixSort(v[i], v[i].size(), false);
 		printVec(v[i], v[i].size());
 	}
 }

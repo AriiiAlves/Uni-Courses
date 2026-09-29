@@ -132,3 +132,17 @@ Assume-se que:
 
 $ "custo_total" = n/2 dot 0 + n/4 dot 1 + n/8 dot 2 + ... + 1 dot log_2 n $
 $ "custo_total" = n dot sum_(i=0)^(log_2 (n-1)) i/(2^(i+1)) = n/2 sum_(i=0)^(log_2 (n-1)) i/(2^i) $
+
+== Radix Sort
+
+=== Lógica
+
+Os números são ordenados por seus dígitos, dos menos significativos para os mais significativos. Ex: ordenar 236 e 235 por 6 e 5. Se não bastar, comparam-se os do meio, etc.
+
+Utilizam-se listas
+
+- Uma fila para cada dígito
+- Os números vão sendo inseridos na fila de acordo com o dígito sendo avaliado
+- A cada iteração, os números estão mais próximos da ordenação final
+
+

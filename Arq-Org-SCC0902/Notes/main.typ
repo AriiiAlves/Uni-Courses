@@ -20,6 +20,7 @@
     none
   }
 })
+#set par(justify: true, leading: 0.65em)
 
 = Notas de aula
 

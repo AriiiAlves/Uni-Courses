@@ -8,6 +8,15 @@
 	github: "https://github.com/AriiiAlves",
 )
 
+#set heading(numbering: (..nums) => {
+  let vals = nums.pos()
+  if vals.len() <= 2 {
+    vals.map(str).join(".") + "."
+  } else {
+    none
+  }
+})
+
 = Tema 1
 
 Esta es una introducción al tema. Typst ajusta el texto automáticamente.

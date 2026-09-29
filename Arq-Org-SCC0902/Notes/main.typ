@@ -1,17 +1,13 @@
 #import "./lib.typ": *
 
 #show: project.with(
-	title: "Notes de Org Arq",
+	title: "Notas de Aula - Org Arq",
 	author: "Ariel Alves da Silva",
 	academic-year: "Academic year 2026",
 	orcid: "https://orcid.org/xxxx-xxxx-xxxx-xxxx", // Your number
 	github: "https://github.com/AriiiAlves",
 )
 
-#set document(title: "Notas de Aula - Arquitetura de Computadores e Lógica Digital")
-#set page(paper: "a4", margin: (x: 2cm, y: 2.5cm))
-#set text(font: "Liberation Sans", size: 11pt)
-#set par(justify: true)
 #set heading(numbering: (..nums) => {
   let vals = nums.pos()
   if vals.len() <= 2 {

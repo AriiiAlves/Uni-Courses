@@ -1,0 +1,21 @@
+type,size,avg
+sorted,100,0.0136406,18.7294
+descendent sorted,100,0.011215,1
+random,100,0.0126528,1
+random with repetition,100,0.0127027,1
+sorted,500,0.0999433,29.8125
+descendent sorted,500,0.0875901,1
+random,500,0.0748744,1
+random with repetition,500,0.0662213,1
+sorted,1000,0.142725,32.4287
+descendent sorted,1000,0.132908,1
+random,1000,0.153133,1
+random with repetition,1000,0.154237,1
+sorted,5000,0.857557,38.9294
+descendent sorted,5000,0.82119,1
+random,5000,0.988729,1
+random with repetition,5000,0.986664,1
+sorted,10000,1.83313,40.4835
+descendent sorted,10000,1.80381,1
+random,10000,2.18651,1
+random with repetition,10000,2.24999,1

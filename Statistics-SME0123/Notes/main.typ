@@ -374,6 +374,59 @@ O segredo para trabalhar com exercícios de probabilidade é, primeiro, extrair 
 
 		A aproximação é boa quando $M p (1-p) >= 3$.
 	]
+	
+	#definition("Teorema do limite central")[
+		À medida que o tamanho da amostra (n) aumenta, a distribuição da média amostral aproxima-se de uma distribuição normal, independentemente da forma da distribuição original da população.
+
+		- A média da distribuição amostral é igual à media da população original.
+		- O desvio padrão é dado por $sigma/sqrt(n)$
+
+		#proof[
+			Amostra com n=25 de população com $N(80,25)$. ($sigma = 5$)
+
+			Amostra com n=36 de população com $N(75,9)$. ($sigma = 3$)
+
+			Qual a probabilidade da média amostral em n=25 exceder a média amostral em n=26 por no mínimo 3.4 mas no máximo 5.9. 
+
+			Média da diferença:
+
+			$ mu_triangle = 80-75=5 $
+
+			Desvio da diferença (soma das variâncias):
+
+			$ sigma^2_triangle = sigma_1^2/n_1 + sigma_2^2/n_2 = 1.1 $
+
+			Assim, a distribuição da diferença das médias é $N(5,1.1)$.
+		]
+	]
+]
+
+
+#definition("Distribuição de Weibull")[
+	Uma variável aleatória X tem distribuição de Weibull se, para $lambda > 0$ (média):
+
+	$ f_x (x,alpha, beta) = cases(
+		alpha beta x^(beta-1) e^(-alpha x^beta)", se "x>=0,
+		0", caso contrário"
+	) $
+
+	Para $beta=1$, a distribuição se reduz à distribuição exponencial.
+
+	$ mu = alpha^(-1/beta) dot Gamma(1+1/beta) $
+	$ sigma^2 = alpha^(-2/beta) {Gamma(1 + 2/beta) - [Gamma(1 + 1/beta)]^2} $
+
+	Onde:
+	
+	$ Gamma(n) = integral_0^infinity t^(n-1) e^(-t) d t $
+	$ Gamma(n) = (n-1)!, n in NN^* $
+
+	Em particular:
+
+	$ Gamma(3/2) = sqrt(pi)/2 $
+	
+	A função de confiabilidade (sobrevivência) é:
+
+	$ P(T>t) = e^(-alpha x^beta) $
 ]
 
 == Notas adicionais

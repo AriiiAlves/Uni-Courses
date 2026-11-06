@@ -1,0 +1,47 @@
+%YAML 1.2
+---
+# Minimal RISC-V assembly syntax for Typst raw blocks (```riscv / ```asm).
+name: RISC-V Assembly
+file_extensions: [riscv, rv, asm, s]
+scope: source.riscv
+
+contexts:
+  main:
+    # Comments
+    - match: '(#|//).*$'
+      scope: comment.line.riscv
+    # Strings / chars
+    - match: '"'
+      scope: punctuation.definition.string.begin.riscv
+      push: string
+    - match: "'(\\\\.|[^'])'"
+      scope: string.quoted.single.riscv
+    # Labels  (name:)
+    - match: '\b[A-Za-z_.$][\w.$]*(?=:)'
+      scope: entity.name.function.label.riscv
+    # Directives (.data, .text, .asciz, .word ...)
+    - match: '(?<![\w.])\.[A-Za-z_]\w*'
+      scope: keyword.other.directive.riscv
+    # Instructions (base + M + pseudo-instructions)
+    - match: '(?i)\b(add|addi|addw|addiw|sub|subw|and|andi|or|ori|xor|xori|not|neg|sll|slli|srl|srli|sra|srai|sllw|srlw|sraw|slt|slti|sltu|sltiu|seqz|snez|sltz|sgtz|lui|auipc|lb|lh|lw|ld|lbu|lhu|lwu|sb|sh|sw|sd|beq|bne|blt|bge|bltu|bgeu|bgt|ble|bgtu|bleu|beqz|bnez|blez|bgez|bltz|bgtz|jal|jalr|j|jr|ret|call|tail|la|li|mv|nop|ecall|ebreak|fence|mul|mulh|mulhu|mulhsu|mulw|div|divu|divw|rem|remu|remw|csrr|csrw|csrrw|csrrs|csrrc|flw|fsw|fld|fsd|fadd\.s|fsub\.s|fmul\.s|fdiv\.s|fmv\.s|jmp)\b'
+      scope: keyword.control.instruction.riscv
+    # Registers (ABI + numeric + generic operand names used in notes)
+    - match: '\b(zero|ra|sp|gp|tp|fp|pc|t[0-6]|s[0-9]|s1[01]|a[0-7]|x[0-9]|x[12][0-9]|x3[01]|f[0-9]|f[12][0-9]|f3[01]|ft[0-9]|ft1[01]|fs[0-9]|fs1[01]|fa[0-7]|rd|rs[0-9]?|R[0-9]+)\b'
+      scope: constant.language.register.riscv
+    # Immediate placeholders
+    - match: '\b(imm|offset|label|symbol)\b'
+      scope: variable.parameter.riscv
+    # Numbers: hex, binary, decimal (with optional sign)
+    - match: '(?<![\w.])-?(0[xX][0-9A-Fa-f_]+|0[bB][01_]+|[0-9]+)\b'
+      scope: constant.numeric.riscv
+    # Operators
+    - match: '(==|!=|<=|>=|<<|>>|\+=|-=|=|\+|-|\*|/|%|<|>|&|\|)'
+      scope: keyword.operator.riscv
+
+  string:
+    - meta_scope: string.quoted.double.riscv
+    - match: '\\.'
+      scope: constant.character.escape.riscv
+    - match: '"'
+      scope: punctuation.definition.string.end.riscv
+      pop: true

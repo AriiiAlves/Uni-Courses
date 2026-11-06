@@ -18,7 +18,7 @@
 })
 #set par(justify: true, leading: 0.65em)
 
-= Notas de aula
+= Primeira Parte
 
 == Arquitetura de Von-Neumann
 
@@ -251,7 +251,7 @@ Ex: `jal s0, -4` -> `1 1111111100 1 11111111 01000 1101111`
 
 == Monociclo (RISC-V)
 
-A instrução é executada em um único ciclo de clock. Final de ciclo: tudo o que está nas conexões (linhas) é salvo nos registradores. 
+A instrução é executada em um único ciclo de clock. Final de ciclo: tudo o que está nas conexões (linhas) é salvo nos registradores.
 
 Componentes: PC, Banco registradores, ULA, UC, Memória, I/O.
 
@@ -324,7 +324,7 @@ _ou_
 
 ==== Execução de load/store
 
-- *Load*: Leitura de registrador origem e valor imediato 
+- *Load*: Leitura de registrador origem e valor imediato
 	- Calcula endereço usando deslocamento de 12 bits (usa ALU)
 	- Lê a memória e atualiza o registrador destino.
 - *Store*: Leitura de dois registradores origem e valor imediato
@@ -394,7 +394,7 @@ Ao invés de usar bit de sinal, podemos usar complemento de dois: Inverte e soma
 
 Bits em ordem de Gray code (apenas 1 bit muda de estado a cada incremento/decremento).
 
-Soma de produtos: Agrupar 1's em clusters de 1, 2, 4, 8, ...
+Soma de produtos: Agrupar 1s em clusters de 1, 2, 4, 8, ...
 
 #set align(center)
 #image("./images/karnaugh.png", width: 70%)== Principais circuitos
@@ -428,4 +428,175 @@ Exemplo de uso de flip-flops.
 
 - Registradores paralelos - Carregamento e descarregamento feito simultaneamente.
 - Registradores de deslocamento - Transfere informações serialmente. Uso em I/O e também dentro da ALU (deslocamento lógico e rotação).
-- Contadores - Registrador cujo valor é incrementado de 1 módulo a capacidade do registrador.
+- Contadores - Registrador cujo valor é incrementado de 1 módulo a capacidade d
+
+= Segunda Parte
+
+== Multiciclo
+
+A desvantagem do monociclo é que o uso do ciclo de clock se torna ineficiente, pois deve ser do tamanho da instrução mais lenta. Assim, instruções rápidas ficam aguardando tempo demais pelo fim do ciclo de clock.
+
+No multiciclo, os ciclos de clock são menores, e cada ciclo de clock é ume estágio da instrução: IFech, Dec, Exec, Mem, WB. Nem todas as instruções demoram o mesmo número de ciclos de clock para finalizar.
+
+#figure(image("./images/mono-vs-multi.png", width: 100%))
+
+== Pipeline
+
+Dividir a instrução em etapas, cada etapa vai ser executada em 1 ciclo de clock, com sobreposição de etapas diferentes, de instruções diferentes, no mesmo ciclo de clock. Ideia de linha de montagem.
+
+=== Etapas
+
+- IF: Instruction Fetch - Mem. Instr.
+- ID: Instruction Decode - UC/Banco Reg.
+- EX: Execution - ULA
+- Mem: Memory Access - Mem. Dados
+- WB: Write Back - Banco de Registradores
+
+Lembre-se: IF, ID, EX, MEM, WB
+
+#figure(image("./images/pipeline-vs-multi.png", width:100%))
+
+=== Comparação entre Monociclo, Multiciclo e Pipeline
+
+- Monociclo: Cada instrução é executada completa em um único ciclo de clock. O ciclo precisa ser longo o suficiente para aguentar a instrução mais lenta.
+- Multiciclo: Divide a execução de uma instrução em várias etapas menores. O ciclo é curto e baseado na etapa mais longa. instruções diferentes usam um número diferente de ciclos. Uma nova instrução só começa quando a anterior termina.
+- Pipeline: Divida a instrução em estágios, mas permite sobreposição.
+
+Para 100 instruções:
+
+Obs: IPC = instruction per clock, CPI = clock per instruction
+
+- Monociclo:
+	- Tempo de clock = 45 ns
+	- Para 100 instruções: $45 dot 100 = 4500$ ns
+- Multiciclo:
+	- Tempo de clock = 10 ns
+	- CPI médio = 4.2 clocks/inst.
+	- Para 100 instruções: $4.2 dot 10 dot 100 = 4200$ ns
+- Pipeline:
+	- Tempo de ciclo de clock = 10 ns
+	- N° de ciclos de clock = (1 inst: 5, 2 inst: 6, 3 inst: 7). Isso pois precisa primeiro "encher" o pipeline.
+	- Para 100 instruções: 104 ciclos de clock - $104 dot 10 = 1040$ ns
+	- Problema: paradas (gargalos - Instruções esperando liberar um componente, disputa por recursos)
+
+o registrador.
+
+=== Considerações
+
+- O pipeline não diminui o tempo de execução de cada tarefa, mas reaproveita módulos não utilizados (aumenta throughput)
+- A taxa do pipeline é limitada pelo estágio mais lento
+- O pipeline trava se houver dependências
+
+=== Registradores intermediários do pipeline
+
+#figure(image("./images/intermed-registers.png", width: 100%))
+
+#figure(image("./images/intermed-registers-table.png", width: 100%))
+
+Sinais de controle:
+
+#figure(image("./images/intermed-registers-cu.png", width: 100%))
+
+=== Dependências ou conflitos
+
+==== Conflitos estruturais
+
+Acessos simultâneos à memória feitos por 2+ estágios.
+
+- Acessos concorrentes à memória - Uso de memórias multi-portas ou com múltiplos bancos com acessos independentes
+  - Soluções: Caches separadas de dados e instruções, memória com múltiplos de acesso independentes
+- Leitura de instrução e leitura/escrita de dados simultâneos à memória - Uso de arquitetura "Harvard" com caches de dados e instrução separados
+- Acesso simultâneo ao banco de registradores - Uso de banco de registradores com múltiplas portas
+- Uso simultâneo de uma mesma unidade funcional - Replicação da unidade funcional ou implementação "pipelined" dessa unidade
+
+==== Dependência de dados
+
+Uma instrução faz uso de um operando que vai ser produzido por uma outra instrução que ainda está no pipeline. A execução da instrução seguinte depende do operando calculado pela instrução anterior.
+
+Tipos de dependência de dados:
+
+*Dependência verdadeira (diretas) ou RAW (Read After Write)* - Uma instrução utiliza um operando que é produzido por uma instrução anterior
+
+```
+add <R1>, R2, R3
+sub R4, <R1>, R6
+```
+
+*Dependência falsa - Antidependência ou WAR (Write After Read)* - Uma instrução lê um operando que é escrito por uma instrução sucessora
+
+```
+sub R4, <R1>, R6
+add <R1>, R2, R3
+```
+
+*Dependência de saída ou WAW (Write After Write)* - Uma instrução escreve em um operando que é também escrito por uma instrução sucessora
+
+```
+add <R4>, R2, R3
+sub <R4>, R1, R6
+```
+
+===== Adiantamento de Dados (forwarding)
+
+Caminho interno dentro do pipeline entre a saída e a entrada da ULA. Técnica conhecida como forwarding ou bypassing. Evita a parada do pipeline utilizando *buffers internos* em vez de esperar que o elemento de dado chegue nos registradores visíveis ao programador ou na memória.
+
+#figure(image("images/forwarding.png", width: 100%))
+
+Perceba que adiantamos a subtração de `s0` após ele ficar livre da primeira instrução.
+
+Mas, em algumas situações, nem o forwarding pode resolver o problema de parada do pipeline
+
+#figure(image("images/forwarding-miss.png", width: 100%))
+
+Se as próximas instruções utilizam o valor do registrador, mas não escrevem nele, dá pra replicar ele para todas as próximas instruções. Observe sem forwarding:
+
+#figure(image("images/forwarding-2-miss.png", width: 100%))
+
+E agora com forwarding:
+
+#figure(image("images/forwarding-2.png", width: 100%))
+
+Condições para que o adiantamento seja considerado:
+
+- Destino da instrução que está entre os ciclos de *EX e MEM* é igual a um dos registradores de origem da instrução que está entre os ciclos de ID e EX
+- Destino da instrução que está entre os ciclos de *MEM e WB* é igual a um dos registradores de origem da instrução que está entre os ciclos de ID e EX
+
+
+#figure(image("images/forwarding-diagram.png", width: 100%))
+
+#figure(image("images/forwarding-table.png", width: 100%))
+
+Condições para detecção de dependência de dados:
+
+- Dependência EX:
+
+```
+if (EX/MEM.RegWrite and (EX/MEM.Rd != 0) and (EX/MEM.RegWrite = ID/EX.Rs1)) ForwardA = 10
+
+if (EX/MEM.RegWrite and (EX/MEM.Rd != 0) and (EX/MEM.Rd = ID/EX.Rs2)) ForwardB = 10
+```
+
+- Dependência MEM:
+
+```
+if(MEM/WB.RegWrite and (MEM/WB.Rd != 0) and (MEM/WB.Rd = ID/EX.Rs1)) ForwardA = 01
+
+if(MEM/WB.RegWrite and (MEM/WB.Rd != 0) and (MEM/WB.Rd = ID/EX.Rs2)) ForwardA = 01
+```
+
+Problema: Quando se está acumulando os valores de um vetor em um registrador e lê e escreve no mesmo registrador.
+
+```
+add 1,1,2
+add 1,1,3
+add 1,1,4
+...
+```
+
+Agora mudamos para a dependência MEM.
+
+```
+if(MEM/WB.RegWrite and (MEM/WB.Rd != 0) and(EX/MEM.rd != ID/EX.rs1) and (MEM/WB.Rd = ID/EX.Rs1)) ForwardA = 01
+
+if(MEM/WB.RegWrite and (MEM/WB.Rd != 0) and (EX/MEM.rd != ID/EX.rs2) and (MEM/WB.Rd = ID/EX.Rs2)) ForwardA = 01
+```

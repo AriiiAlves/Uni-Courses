@@ -30,12 +30,16 @@
 )
 
 #subject("Introdução à Ciência da Computação II (SCC0201)", lang: "c",
-  include "ICC2-SCC0201/icc2.typ",
+  include "ICC-II-SCC0201/icc2.typ",
   [
     #heading(level: 2)[Lista 2 - Complexidade]
     #set heading(offset: 2)
-    #include "ICC2-SCC0201/lista2-complexidade.typ"
+    #include "ICC-II-SCC0201/lista2-complexidade.typ"
   ],
+)
+
+#subject("Cálculo III (SMA0355)",
+  include "Calculus-III- SMA0355/calculus3.typ",
 )
 
 #subject("Equações Diferenciais Ordinárias (SME0340)",

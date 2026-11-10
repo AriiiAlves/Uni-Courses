@@ -583,3 +583,236 @@ if(MEM/WB.RegWrite and (MEM/WB.Rd != 0) and(EX/MEM.rd != ID/EX.rs1) and (MEM/WB.
 
 if(MEM/WB.RegWrite and (MEM/WB.Rd != 0) and (EX/MEM.rd != ID/EX.rs2) and (MEM/WB.Rd = ID/EX.Rs2)) ForwardA = 01
 ```
+
+== Memória Cache
+
+- Funções de mapeamento
+- Algoritmos de substituição
+- Políticas de escuta
+
+```
+Linha da Cache
+
+| Tag | V | M | Reg Subst | Bloco de Dados |
+```
+
+- `V` - Bit de validade. `0/1`, indica se a linha está ocupada ou não.
+
+== Funções de mapeamento (Cache)
+
+Indicam onde um determinado bloco pode ser mapeado (alocado) na cache.
+
+```text
+Linha da cache
+
+| Tag | V | M | Reg Subst | Bloco de Dados |
+
+^
+|
+
+Cache
+
+---------------------
+|										|
+---------------------
+|										|
+---------------------
+
+^
+|
+
+
+MP (Memória Principal)
+---------------------
+|										| -> Bloco (words)
+---------------------
+|										|
+---------------------
+```
+
+- Para um endereço, 16 words =  64 bytes = 6 bits p/ endereços.
+
+```text
+Abaixo, cada quadrado é um byte.
+
+-------------------------
+|			|			|			|			|  011100
+-------------------------
+|			|			|			|			|  011000
+-------------------------
+|			|			|			|			|  010100
+-------------------------
+|			|			|			|			|	 010000 -> Bloco 1 (4 words)
+-------------------------
+|			|			|			|			|  001100
+-------------------------
+|			|			|			|			|  001000
+-------------------------
+|			|			|			|			|  000100
+-------------------------
+|			|			|			|			|	 000000 -> Bloco 0 (4 words)
+-------------------------
+   00    01    10    11
+
+|
+V
+
+-------------------------
+|												| 110000 -> Bloco 1 (4 words)
+-------------------------
+|												| 100000 -> Bloco 1 (4 words)
+------------------------- 
+|												| 010000 -> Bloco 1 (4 words)
+-------------------------
+|												| 000000 -> Bloco 0 (4 words)
+-------------------------
+```
+
+Acima, para `000110`:
+
+- `0001[10]` = Byte offset (deslocamento do byte dentro da word)
+- `00[01]10` = Word offset (deslocamento da word dentro do bloco)
+
+=== Mapeamento Direto
+
+Mapeia um bloco da MP na linha da cache de acordo com uma função. Usa Tag, Index, WO, BO.
+
+É o resto da divisão do n° do bloco da MP (i) pelo n° de linhas da cache (m). Assim, mapeamos o n° do bloco da MP na linha da cache i como sendo:
+
+$ i = j mod m $
+
+```text
+Cache
+
+ Tag  V   Index  Bloco de Dados
+-------------------------------
+|		|		|				|		          | 0
+-------------------------------
+|		|		|				|		          | 1
+-------------------------------
+
+m = 2
+```
+
+Para `j = 0,1,2,3`:
+
+- `i = 0` - `i = 0 mod 2 = 0`
+- `i = 1` - `i = 0 mod 2 = 1`
+- `i = 2` - `i = 0 mod 2 = 0`
+- `i = 3` - `i = 0 mod 2 = 0`
+
+Para `000110`:
+
+- `0001[10]` = Byte offset (deslocamento do byte dentro da word)
+- `00[01]10` = Word offset (deslocamento da word dentro do bloco)
+- `0[0]010` = Index (diz a linha da cache onde o bloco foi mapeado)
+- `[0]0010` = Tag (diz qual bloco foi mapeado. No exemplo: Bloco 0, Bloco 2, Bloco 4, ...)
+
+Não usa algoritmo de substituição. Para colisão, apenas substitui.
+
+==== Exemplo
+
+Endereço: `110000` = `[1][1][00][00]`
+
+- Tag = `1`
+- Index = `1`
+- WO = `00`
+- BO = `00`
+
+```text
+---------------
+|			150			|	 110011
+---------------
+|			140			|	 110010 
+---------------
+|			130			|  110001
+---------------
+|			120			|  110000 -> Bloco 01 (1 word)
+---------------
+    4 words
+```
+
+```text
+Cache
+
+Tag   V       Bloco de Dados
+---------------------------------
+|										            | 0
+---------------------------------
+|	1	|	1 | 120 | 130 | 140 | 150 |	1
+---------------------------------
+
+m = 2
+```
+
+```
+Tag -> MUX (seletor = Index) -> Tag ->									-> 0 (miss)
+																				->  Comparador       ou
+												 	 Endereço ->									-> 1 (hit)
+```
+
+=== Mapeamento Totalmente Associativo
+
+Mapeia os blocos da MP em qualquer linha da cache. Usa apenas Tag, WO, BO. (Sem index)
+
+```text
+Cache
+
+ Tag    V  Bloco de Dados
+-------------------------
+|	11	|	1	|						  | 0
+-------------------------
+|	  	|	0	|						  | 1
+-------------------------
+
+m = 2
+```
+
+```
+Tag idx 0    -> 						-> 0 (miss)
+Tag idx 1    ->  Comparador      ou
+Tag Endereço -> 						-> 1 (hit)
+```
+
+Problema: Comparador muito complexo (muitas entradas).
+
+=== Mapeamento Associativo por Conjunto (K-Way)
+
+Mapeia diretamente em um conjunto de linhas e dentro do conjunto, em qualquer linha. Usa Tag, Set, WO, BO.
+
+- v = n° de conjuntos
+- k = n° de linhas por conjunto
+
+```text
+Cache
+
+ Set Tag  V  Bloco de Dados
+---------------------------
+|		|		|		|				      |
+| 0 |----------------------
+|		|		|		|				      |
+---------------------------
+|	 	|		|		|				      |
+| 1 |----------------------
+|	 	|		|		|				      |
+---------------------------
+
+m = v * k
+```
+
+=== Algoritmos de Substituição
+
+- FIFO - First In First Out
+- LRU - Least Recently Used
+- LFU - Least Frequently Used
+- AGING:
+	- A cada interrupção de SO, faz um shift right.
+	- Se página foi usada, `1`. Se não, `0`.
+	- Contador final: `Bit 7 * 2^8 + Bit 6 * 2^7 + ... + Bit 0 * 2^0`
+	- A cada shift, vai "esquecendo"! E os pesos ficam menores
+
+```
+------------------------      ------------------------
+|1||0||1||1||0||1||0||1|  >>  |0||1||0||1||1||0||1||0|
+------------------------      ------------------------
+```

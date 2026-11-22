@@ -597,3 +597,295 @@ Sejam X e Y duas variáveis aleatórias. Quando há interesse na variação conj
 
 	$ (Y - E(Y))/sqrt(V a r(Y)) = (Y - n mu)/(mu sqrt(n)) ~ N(0,1) $
 ]
+
+= Análise Exploratória de Dado
+
+É aplicada em uma amostra.
+
+== Medidas de Posição
+
+#Highlight1("Média")[
+	$ overline(x) = (sum_(i=1)^n x_i)/(n) $
+]
+
+#Highlight1("Mediana")[
+	$ M d = cases(
+		x_c", se n ímpar",
+		(x_c+x_(c+1))/2", se n par",
+	) $
+]
+
+#Highlight1("Moda")[
+	Valor mais frequente da amostra.
+]
+
+== Medidas de Posição
+
+#Highlight1("Quantil")[
+	É o valor que provoca uma divisão conveniente nos dados (ordenados). Ex: O quantil de 10% divide os dados de modo que "10% dos menores valores fiquem à esquerda do valor escolhido para o quantil". O quantil de 50% é a mediana.
+
+	- *Quartis* - Dividem os dados em porções de 25%
+	- *Decis* - Dividem os dados em porções de 10%
+	- *Percentis* - Dividem os dados em porções de 1%
+]
+
+== Medidas de Dispersão
+
+é comum usar as medidas corrigidas (n-1 ao invés de n).
+
+#Highlight1("Variância Corrigida")[
+	$ s^2 = (sum_(i=1)^n (x_i-overline(x))^2)/(n-1) $
+]
+
+#Highlight1("Desvio Padrão Corrigido")[
+	$ s = sqrt((sum_(i=1)^n (x_i-overline(x))^2)/(n-1)) $
+]
+
+#Highlight1("Amplitude")[
+	$ A = x_n - x_1 $
+]
+
+#Highlight1("Coeficiente de Variação")[
+	$ C V = s/overline(x) $
+]
+
+== Assimetria
+
+#Highlight1("Assimetria da Distribuição")[
+	- Simétrica: Média = Mediana = Moda
+	- Assimétrica à Direita: Moda < Mediana < Média
+	- Assimétria à Esquerda: Média < Mediana < Moda
+]
+
+== Curtose
+
+#Highlight1("Curtose da Distribuição")[
+	- Leptocúrtica $> 0$: Distribuição mais concentrada
+	- Mesocúrtica $approx 0$: Achatamento da distribuição normal
+	- Platicúrtica $< 0$: Distribuição mais achatada
+
+	#set align(center)
+	#image("./images/image-1.png", width: 50%)
+	#set align(left)
+]
+
+== Medidas de Associação entre Variáveis Quantitativas
+
+#Highlight1("Covariância (amostral)")[
+	$ s_(X Y) = (sum_(i=1)^n (x_i-overline(x))(y_i-overline(y)))/(n-1) $
+]
+
+#Highlight1("Coeficiente de Correlação Linear (amostral) de Pearson")[
+	$ r = (s_(X Y))/sqrt(s^2_X s^2_Y) $
+
+	Propriedade: $-1 <= r <= 1$
+
+	Classificações (apenas indica):
+	- $r=1$ - Correlação perfeita e positiva
+	- $r=-1$ - Correlação perfeita e negativa
+	- $0.7 <= bar(r) <= 1$ - Correlação forte
+	- $0.5 <= bar(r) <= 0.69$ - Correlação moderada
+	- $0 <= bar(r) <= 0.49$ - Correlação fraca
+]
+
+#Highlight1("Coeficiente de Correlação de Spearman")[
+	É definido como o coeficiente de correlação de Pearson entre variáveis classificadas em postos.
+
+	Para uma amostra de tamanho $n$, os $n$ dados brutos $X_i,Y_i$ são convertidos em postos $"rg" X_i, "rg" Y_i$ e o coeficiente é dado por:
+
+	$ r_s = rho_("rg"_X, "rg"_Y) = "cov"("rg"_X, "rg"_Y)/(sigma_"rg"_X sigma_"rg"_Y) $
+
+	*Posto* $"rg"_X_i$ consiste em ordenar os valores $X_i$ e obter a posição (a partir de 1) de $X_i$ no conjunto. O mesmo com $"rg"_Y_i$.
+
+	Apenas se todos os postos $n$ forem números inteiros distintos, o coeficiente pode ser calculado usando a fórmula:
+
+	$ r_s = 1 - (6 sum d_i^2)/(n(n^2-1)) $
+
+	Onde $d_i = "rg"(X_i) - "rg"(Y_i)$.
+
+	#example[
+		Correlação entre QI de uma pessoa e horas de televisão por semana.
+
+		#set align(center)
+		#table(
+			columns: 6,
+			align: right,
+			stroke: 0.5pt + gray,
+			fill: (_, y) => if y == 0 { luma(235) },
+			table.header(
+				[*QI*, $X_i$], [*Horas de TV por semana*, $Y_i$],
+				[*posto* $x_i$], [*posto* $y_i$], [$d_i$], [$d_i^2$],
+			),
+			[86],  [0],  [1],  [1],  [$0$],  [0],
+			[97],  [20], [2],  [6],  [$-4$], [16],
+			[99],  [28], [3],  [8],  [$-5$], [25],
+			[100], [27], [4],  [7],  [$-3$], [9],
+			[101], [50], [5],  [10], [$-5$], [25],
+			[103], [29], [6],  [9],  [$-3$], [9],
+			[106], [7],  [7],  [3],  [$4$],  [16],
+			[110], [17], [8],  [5],  [$3$],  [9],
+			[112], [6],  [9],  [2],  [$7$],  [49],
+			[113], [12], [10], [4],  [$6$],  [36],
+		)
+		#set align(left)
+	]
+
+	Uma correlação de Spearman igual a 1 ocorre quando as duas variáveis comparadas são monotonamente relacionadas, *mesmo se a relação entre elas não for linear*. (X e Y sempre crescem juntos). Para -1, o contrário (X cresce, Y diminui).
+
+	#set align(center)
+	#image("images/image-2.png", width: 40%)
+	#set align(left)
+
+	
+]
+
+= Boxplot
+
+#Highlight1("Boxplot")[
+	#set align(center)
+	#image("images/image-3.png", width: 70%)
+	#set align(left)
+
+	Obs: 
+	- $Q 1$ = 25%
+	- $Q 2$ = mediana
+	- $Q 3$ = 75%
+]
+
+= Introdução à Inferência Estatística
+
+Inferência estatística é fazer uma afirmação sobre os parâmetros da população através da amostra.
+
+- $theta$ = Parâmetro desconhecido que queremos estimar (por Métodos de Estimação Pontual)
+
+#Highlight2("Distribuição Amostral da Média")[
+	O que ocorre com a distruibuição de $overline(X)$ se aumentamos o tamanho da amostra?
+
+	$ E(overline(X)) = E(X) = mu $
+
+	$ "Var"(overline(X)) = sigma^2/n arrow.r 0 $
+]
+
+#Highlight1("Teorema do Limite Central - TLC")[
+	Para amostras aleatórias, a distribuição amostral da média aproxima-se , para n grande:
+
+	$ overline("X") ~ N(mu;sigma^2/n) $
+
+	E a padronização:
+
+	$ Z = (overline(X) - E(overline(X)))/sqrt("Var"(overline(X))) = (overline(X)-mu)/(sigma/sqrt(n)) ~ N(0;1) $
+]
+
+#Highlight1("Distribuição Amostral da Proporção")[
+	Suponha X com distribuição de Bernoulli com média $mu = E(X) = p$ e variância $sigma^2 = "Var"(X) = p(1-p)$.
+
+	Considere também uma amostra aleatória $X = (X_1,X_2,...,X_n)$ da variável aleatória X.
+
+	Temos interesse em avaliar a proporção $hat(p)$ de indivíduos/elementos que possui a característica (sucesso) na amostra:
+
+	$ hat(p) = (sum_(i=1)^n X_i | "Sucesso")/n $ 
+
+	Pelo TCL, $hat(p)$ terá distribuição aproximadamente normal com média e variância dadas, respectivamente, por:
+
+	$ mu = E(hat(p)) = p $
+	$ sigma^2 = "Var"(hat(p)) = (p(1-p))/n $
+
+	Ou seja:
+
+	$ hat(p) ~ N(p; (p(1-p)/n)) $
+
+	E a distribuição padronizada:
+
+	$ Z = (hat(p)-E(hat(p)))/sqrt("Var"(hat(p))) = (hat(p)-p)/sqrt((p(1-p))/n) ~ N(0;1) $
+]
+
+#Highlight1("Estimação pontual")[
+		Para ober um estimador de determinado parâmetro populacional, utilizaremos alguns métodos para obtenção de estimadores:
+
+		- Método de Mínimos Quadrados
+		- Método dos Momentos
+		- *Método de Máxima Verossimilhança* - O que usaremos.
+	]
+
+	#Highlight1("Método de Máxima Verossimilhança")[
+			Seja X uma variável aleatória com f.m.p $p_x (x,theta)$ ou f.d.p. $f_x (x,theta)$, em que $theta$ é o parâmetro que queremos estimar tal que $theta in Theta in RR$. Considere:
+
+			- $X = (X_1, X_2,...,X_n)$ - Amostra aleatória
+			- $x = (x_1, x_2,...,x_n)$ - Amostra observada ou vetor de observações de X
+
+			OBS:
+
+			- $theta$ pode ser um vetor, $theta = (theta_1, ..., theta_k)$.
+			- Iremos considerar casos onde a variável aleatória não depende de $theta$.
+
+			*Definição: Função de Verossimilhança*
+			
+			A função de verossimilhança $cal(L)(theta, x)$ é definida por:
+
+			$ cal(L)(theta, x) = product_(i=1)^n p_x (x_i, theta) " ou " product_(i=1)^n f_x (x_i, theta) $
+
+			#Highlight2("De onde vem a função")[
+				Ela vem de independência. Se $X_1, ..., X_n$ é amostra aleatória, a probabilidade conjunta de observar exatamente aquela amostra é, por definição:
+
+				$ P(X_1=x_1,...,X_n=x_n) = product_(i=1)^n P(X_i=x_i) = product_(i=1)^n p_x (x_i, theta) $
+			]
+
+			*Definição: Função Log-verossimilhança*
+
+			A função de log-verossimilhança $cal(l)(theta, x)$ é definida por:
+
+			$ cal(l)(theta, x) = ln (cal(L)(theta, x)) $
+
+			Com ela, o produtório vira soma (mais fácil de derivar).
+
+			OBS: $log = ln$ (em Estatística)
+
+			*Estimador de Máxima Verossimilhança*
+
+			O estimador de máxima verossimilhança (EMV) de $theta$ ($hat(theta)$) é o valor que maximiza a função $cal(L)(theta,x)$.
+
+			Em alguns casos, podemos obter fazendo:
+
+			$ (partial L (theta, x))/(partial theta) = 0 " , " (partial^2 L (theta, x))/(partial theta^2) < 0 $
+
+			Maximizar $cal(L)(theta, x)$ é equivalente a maximizar $cal(l)(theta, x)$.
+
+			#example[
+
+				*Bernoulli* (discreto)
+
+				Vamos estimar a probabilidade $p$.
+
+				$ p_x (x,p) = p^x (1-p)^(1-x)" , " x in {0,1} $
+
+				$ cal(L)(p) = product_(i=1)^n p^x_i (1-p)^(1-x_i) = p^(sum x_i) (1-p)^(n-sum x_i) $
+
+				$ cal(l) = (sum x_i) ln p + (n - sum x_i) ln(1-p) $
+
+				$ (partial cal(l))/(partial p) = (sum x_i)/p - (n - sum x_i)/(1-p) = 0 arrow.r.double hat(p) = (sum x_i)/n = overline(X) $
+
+				*Poisson* (contínuo)
+
+				Vamos estimar o parâmetro $lambda$.
+
+				$ p_x (x, lambda) = (e^(-lambda) lambda^x)/x! $
+
+				$ cal(L)(lambda) = (e^(- n lambda) lambda^(sum x_i))/(product x_i !) $
+
+				$ cal(l)(lambda) = cal(l)(lambda) = -n lambda + (sum x_i) ln lambda - ln (product x_i !) $
+
+				$ (partial cal(l))/(partial lambda) = -n + (sum x_i)/lambda = 0 arrow.r.double hat(lambda) = overline(X) $
+			]
+
+			*Propriedade do EMV: Invariância*
+
+			Se $hat(theta)$ é o EMV de $theta$, então $g(hat(theta))$ é o EMV de $g(theta)$
+
+			#example[
+				Bernoulli.
+
+				$ hat(p) = overline(X) $
+
+				$ "Var"(X) = p(1-p) = overline(X)(1-overline(X)) $
+			]
+		]

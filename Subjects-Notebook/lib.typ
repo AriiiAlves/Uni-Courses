@@ -58,13 +58,16 @@
     radius: 3pt,
     clip: true,
     below: 1.5em,
-    breakable: false, // keep the title bar together with its content
+    // Breakable so boxes taller than a page continue on the next one instead
+    // of being clipped; the sticky title bar never gets orphaned.
+    breakable: true,
   )[
     #block(
       fill: color.lighten(10%),
       width: 100%,
       inset: 8pt,
       below: 0pt,
+      sticky: true,
     )[#text(fill: white, weight: "bold")[#title]]
     #block(
       fill: color.lighten(90%),
@@ -288,6 +291,20 @@
     v(1em)
     text(size: 12pt, weight: "bold", fill: heading-color.lighten(20%))[#it]
     v(0.5em)
+  }
+
+  // Level 4 headings
+  show heading.where(level: 4): it => {
+    v(0.8em)
+    text(size: 11pt, weight: "bold", fill: heading-color.lighten(35%))[#it]
+    v(0.4em)
+  }
+
+  // Level 5 headings
+  show heading.where(level: 5): it => {
+    v(0.6em)
+    text(size: 10.5pt, weight: "bold", fill: heading-color.lighten(50%))[#it]
+    v(0.3em)
   }
 
   // --- TITLE PAGE ---

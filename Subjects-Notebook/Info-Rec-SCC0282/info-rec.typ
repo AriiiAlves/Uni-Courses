@@ -14,7 +14,7 @@
   )[#s]).join(box(inset: (x: 3pt))[#text(fill: colors.primary)[$arrow.r$]])
 }))
 
-// Caixa de "pegadinha de prova"
+// Caixa de "atenção"
 #let dica(body) = block(
   fill: rgb("#fff4d6"),
   stroke: (left: 3pt + rgb("#e0a100")),
@@ -454,10 +454,12 @@ O índice invertido não pertence a um modelo: serve Booleano, Vetorial e BM25.
 Construir tudo em memória não escala → *ordenação externa*.
 
 #Highlight2("BSBI — Blocked Sort-Based Indexing")[
-  - Mapeia termo → *termID* (dicionário global em memória).
-  - Divide a coleção em blocos iguais; par (termID, docID) = 8 bytes → bloco de 10 MB ≈ 1,25 mi pares.
-  - Ordena os pares *de cada bloco em memória*, grava índice parcial em disco.
-  - *Merge:* abre todos os blocos, pega sempre o menor termo ainda não processado, junta as listas e grava.
+  + Mapeia termo → *termID* (dicionário global em memória).
+  + Divide a coleção em blocos iguais
+  + Carrega bloco na RAM e gera os pares (termID, docID)
+  + Ordena esses pares em memória
+  + Junta os repetidos e monta as posting lists só daquele bloco (índice invertido parcial).
+  + *Merge:* abre todos os blocos, junta as listas (tendo em mente que estão ordenadas) e grava em disco.
 ]
 
 #example[Bloco 1: $d_1$ "carro azul", $d_2$ "carro carro seguro", $d_3$ "seguro barato"
@@ -480,10 +482,14 @@ Bloco 1 ordenado:
 Final: carro [(1,1),(2,2),(4,1)] · azul [(1,1),(6,1)] · seguro [(2,1),(3,1),(5,1)] · barato [(3,1),(6,1)] · elétrico [(4,1),(5,2)].]
 
 #Highlight2("SPIMI — Single-Pass In-Memory Indexing")[
-  - Usa *termos* direto (sem termID / mapeamento global); dicionário *por bloco*, criado dinamicamente.
-  - Cada posting list cresce *dinamicamente* conforme os tokens chegam — sem coletar e ordenar todos os pares.
-  - Ao encher a memória, ordena *só o dicionário*, grava bloco (tamanho variável) e começa outro.
-  - Vantagens: mais rápido (não ordena registros), economiza memória, blocos maiores → menos acessos a disco.
+
+  Utilizado quando a coleção não cabe na memória.
+
+  + Lê um token (term, docID)
+  + Se o termo não está no dicionário do bloco, cria uma entrada com uma posting list vazia. *Usa o próprio termo, sem termID*.
+  + Acrescenta docID no fim da posting list desse termo, ou soma 1 no tf se o docID já for o último da lista.
+  + Quando a memória enche, ordena só os termos do dicionário, grava o bloco em disco e começa um bloco novo com o dicionário vazio.
+  + No fim, faz merge de todos os blocos (igual BSBI)
 ]
 
 #table(
@@ -497,11 +503,16 @@ Final: carro [(1,1),(2,2),(4,1)] · azul [(1,1),(6,1)] · seguro [(2,1),(3,1),(5
 )
 Ambos geram *índices parciais* e precisam de *merge final*.
 
-== Indexação distribuída (MapReduce)
+== Indexação distribuída (MapReduce, Google)
 
-Máquina *mestre* divide o trabalho em tarefas paralelas (máquinas falham!). Coleção dividida em *trechos* (≈ blocos do BSBI/SPIMI).
+É a mesma ideia do BSBI/SPIMI, mas cada pedaço é processado numa máquina diferente, ao mesmo tempo. Para uma coleção do tamanho da Web, isso é o ideal.
+
+- *Mestre* - Coordena tudo. Não indexa nada, só distribui tarefas e acompanha quem terminou.
+- *Trechos (splits)* - Pedaços da coleção (assim como blocos)
+- *Parsers* - Máquinas que lêem documentos e geram pares (termo, docID). Essa fase é o *map*
+- *Inversores* - Máquinas que juntam os pares e montam as posting lists. Essa fase é o *reduce*.
+
 #flow[Mestre atribui trecho][*Parser* (map): emite (termo, doc)][grava em $j$ partições por faixa de letras (a–f, g–p, q–z)][*Inversor* (reduce): coleta 1 partição, ordena, gera postings]
-É uma instância do *MapReduce* (Google).
 
 == Atualização e compressão
 
@@ -509,7 +520,7 @@ Máquina *mestre* divide o trabalho em tarefas paralelas (máquinas falham!). Co
 - *Inserção* → no auxiliar. *Alteração* = remoção da versão antiga + inserção da nova.
 - *Deleção lógica:* marca como deletado (barato); *física:* espaço recuperado depois, no merge/compactação.
 - *Compressão:* menos espaço, menos transferência, melhor cache, consultas potencialmente mais rápidas.
-  - *Gap encoding:* `[100, 105, 106, 130]` → `[100, 5, 1, 24]` (docIDs crescentes ⇒ gaps pequenos).
+  - *Gap encoding:* `[100, 105, 106, 130]` → `[100, 5, 1, 24]`. A ideia é guardar a diferença entre docIDs consecutivos em vez do docID em si.
   - *Variable byte:* nº variável de bytes por inteiro.
 
 = Dicionários e Tolerância (Aula 08)
@@ -534,12 +545,14 @@ Decisões de design: formato (pdf, html...), idioma, codificação (UTF-8, ISO-8
 
 == Estruturas de dados para o dicionário
 
-O dicionário guarda termo, df e ponteiro para a posting. Requisitos: busca exata, por *prefixo* (hyp\*), atualização, busca *aproximada* (retrival → retrieval).
+O dicionário guarda termo, df e ponteiro para a posting. 
+
+Requisitos: busca exata, por *prefixo* (hyp\*), atualização, busca *aproximada* (retrival → retrieval).
 
 #table(
   columns: 3,
   [Estrutura], [Vantagens], [Desvantagens],
-  [Hashtable], [lookup $O(1)$], [variantes (judgment/judgement), *sem prefixo*, crescer exige *rehashing*],
+  [Hashtable], [lookup $O(1)$], [variantes da mesma palavra (judgment/judgement), *sem busca por prefixo*, crescer exige *rehashing*],
   [Array ordenado (char[20] + int + ponteiro = 32 B)], [simples, busca binária], [atualização (inserir/remover)],
   [Árvores (binária, B, Trie, Patricia)], [*resolve prefixo*], [mais lento: $O(log M)$ balanceada, $O(L)$ Trie; rebalancear é caro (B-tree faz sozinha)],
 )
@@ -547,36 +560,79 @@ O dicionário guarda termo, df e ponteiro para a posting. Requisitos: busca exat
 
 == Correção ortográfica
 
-Usos: normalizar/enriquecer o índice (preservando original) e corrigir consultas. Casos: *palavra isolada* (from → form) e *sensível ao contexto* ("I flew form Sao Paulo").
+*Para que serve:*
+- Corrigir a *consulta* do usuário ("Você quis dizer…?"). É o uso principal.
+- Normalizar/enriquecer o *índice*, sempre preservando o termo original.
 
-- *Edit distance (Levenshtein):* mín. de inserções, remoções, substituições. kitten → sitting = *3*. *Weighted*: pesos por caractere (ex.: teclas vizinhas).
-- Força bruta: distância contra todo o vocabulário. Heurística: só termos com a mesma 1ª letra. Melhor: *sobreposição de n-gramas*.
-- Bigramas de "teacher": `$t, te, ea, ac, ch, he, er, r$`. Índice de n-gramas: bigrama → termos que o contêm (lo → alone, lore, sloth).
+*Dois casos:*
+- *Palavra isolada:* olha cada termo sozinho. Pega "retrival", que não existe no dicionário.
+- *Sensível ao contexto:* olha os vizinhos. Necessário quando o erro gera *outra palavra válida*: em "I flew form São Paulo", _form_ existe, então a correção isolada não percebe nada.
+
+=== Medindo a distância entre palavras
+
+- *Edit distance (Levenshtein):* número mínimo de inserções, remoções e substituições de um caractere para transformar uma palavra na outra. kitten → sitting = *3* (k→s, e→i, +g).
+- *Weighted edit distance:* cada operação tem um peso diferente. Ex.: trocar letras de *teclas vizinhas* custa menos, porque é um erro de digitação mais provável.
+
+*Problema:* comparar a consulta com *todo* o vocabulário (força bruta) é caro demais, já que são milhões de termos e a edit distance é $O(|a| dot |b|)$ por par.
+- Heurística simples: só comparar com termos que começam com a mesma letra. É fraca: falha se o erro estiver na 1ª letra.
+- *Solução melhor:* usar n-gramas como *filtro barato* para achar poucos candidatos e só então calcular a edit distance neles.
+
+=== Filtro com n-gramas
+
+*Bigramas* de uma palavra: pares de letras consecutivas. Com marcadores de início/fim (`$`), "teacher" → `$t, te, ea, ac, ch, he, er, r$`.
+
+*Índice de n-gramas:* um índice invertido em que o "termo" é o bigrama e a posting list são as *palavras do vocabulário* que o contêm. Ex.: `lo` → alone, lore, sloth. É construído uma vez, junto com o dicionário.
+
+Intuição: palavras parecidas compartilham muitos bigramas. Para medir *quanto* compartilham, usa-se Jaccard.
 
 #Highlight1("Coeficiente de Jaccard")[
   $ J(X, Y) = (|X inter Y|)/(|X union Y|) $
-  lord {lo, or, rd} × ordinary {or, rd, di, in, na, ar, ry}: $2\/8 = 0.25$. lord × lore {lo, or, re}: $2\/4 = 0.5$.
+  Vai de 0 (nenhum bigrama em comum) a 1 (mesmos bigramas). Dividir pela união penaliza palavras muito maiores, que casariam muitos bigramas só por serem longas.
+
+  - lord {lo, or, rd} × ordinary {or, rd, di, in, na, ar, ry}: $2\/8 = 0.25$.
+  - lord × lore {lo, or, re}: $2\/4 = 0.5$ → mais parecidas.
+
+  Atalho: $|X union Y| = |X| + |Y| - |X inter Y|$. Como o índice já dá o nº de casamentos ($|X inter Y|$), não é preciso montar os conjuntos.
 ]
 
-*Algoritmo:* (1) enumerar n-gramas da consulta e dicionário; (2) recuperar termos via índice de n-gramas; (3) manter os com nº de casamentos ≥ *limiar 1*; (4) Jaccard ≥ *limiar 2*; (5) edit distance nos sobreviventes.
+*Algoritmo (cada etapa elimina candidatos antes da próxima, que é mais cara):*
++ Quebrar a consulta em bigramas.
++ Buscar cada bigrama no índice de n-gramas e contar, para cada termo retornado, *quantos bigramas casaram*.
++ Manter os termos com nº de casamentos ≥ *limiar 1* (corte grosso).
++ Calcular Jaccard e manter os com $J$ ≥ *limiar 2* (corte que considera o tamanho).
++ Calcular a *edit distance* só nos sobreviventes e sugerir o de menor distância.
 
-#example[$q$ = retrival (bigramas: re, et, tr, ri, iv, va, al), limiar 1 = 4, limiar 2 = 0,44.
+#example[
+  $q$ = retrival → 7 bigramas: re, et, tr, ri, iv, va, al. Limiar 1 = 4, limiar 2 = 0,44.
 
-Casamentos: retrieval 6, revival 4, trivial 4, arrival 4, retrieve 4, retinal 3 (cai).
+  *Passo 3 — casamentos:* retrieval 6, revival 4, trivial 4, arrival 4, retrieve 4, retinal 3 (cai).
 
-Jaccard: retrieval $6\/9 = 0.667$; revival, trivial, arrival $4\/9 = 0.444$ (passam); retrieve $4\/10 = 0.40$ (cai).
+  *Passo 4 — Jaccard* (união = 7 + nº de bigramas do termo − casamentos):
+  - retrieval (8 bigramas): $6\/(7+8-6) = 6\/9 = 0.667$
+  - revival, trivial, arrival (6 bigramas cada): $4\/(7+6-4) = 4\/9 = 0.444$ (passam no limite)
+  - retrieve (7 bigramas): $4\/(7+7-4) = 4\/10 = 0.40$ (cai)
 
-Edit distance: retrieval *1*, revival 2, trivial 3, arrival 3 → *"Você quis dizer: retrieval?"*]
+  *Passo 5 — edit distance:* retrieval *1* (inserir "e"), revival 2, trivial 3, arrival 3.
 
-*Sensível ao contexto:* gerar variantes corrigindo um termo por vez (flew from / fled form / flea form...) e sugerir a que tem *mais resultados*. Otimização: usar *biwords* mais frequentes na coleção ou nos *logs de consultas* ("flew from" é mais comum).
+  → *"Você quis dizer: retrieval?"*
+]
+
+=== Correção sensível ao contexto
+
+Para "flew form São Paulo":
++ Para *cada termo*, buscar as correções próximas (pelo método acima): flew → flea, fled…; form → from, fore…
++ Gerar frases trocando *um termo por vez*: "flew *from*", "*fled* form", "*flea* form"…
++ Executar cada variante e sugerir a que retorna *mais resultados*.
+
+*Otimização:* executar todas as variantes é caro. Em vez disso, consultar quais *biwords* (pares de palavras) são mais frequentes na coleção ou nos *logs de consultas*: "flew from" é muito mais comum que "flew form" → sugere "from".
 
 = Recuperação Semântica e Modelos de Linguagem (Aula 09)
 
 Modelos lexicais (BM25) *não estão obsoletos*; a semântica tenta aproximar pelo *significado*. Problema central: "carro barato" × "veículo de baixo custo".
 
 - *Vocabulary mismatch:* dor de cabeça/cefaleia, notebook/computador portátil, demissão/desligamento.
-- *Sinonímia:* palavras diferentes, mesmo conceito → lexical *perde relevantes* → *falsos negativos*, ↓ *revocação*.
-- *Polissemia:* mesma palavra, vários sentidos (banco) → *falsos positivos*, ↓ *precisão*.
+- *Sinonímia:* palavras diferentes, mesmo conceito → lexical *perde relevantes* → *falsos negativos*, baixa *revocação*.
+- *Polissemia:* mesma palavra, vários sentidos (banco) → *falsos positivos*, baixa *precisão*.
 - *Lacuna semântica:* distância entre as palavras da consulta e a intenção real ("remédio para dor de cabeça forte" → "tratamento de enxaqueca").
 
 #table(
@@ -600,181 +656,324 @@ Unigrama: $P(o)=3\/9$, $P("gato")=2\/9$, $P("dorme")=2\/9$ → "o gato dorme" $a
 
 Bigrama: $P("gato"|o) = 2\/3$, $P("dorme"|"gato") = 1\/2$ → $approx 0.111$ (trigrama: idem).]
 
-#Highlight2("Query Likelihood Model")[
+#Highlight2("Query Likelihood Model (QLM)")[
   Ranqueia pela chance de o doc "gerar" a consulta:
   $ P(q|d) = product_(i=1)^m P(q_i | d), quad log P(q|d) = sum_i log P(q_i|d) $
   *Suavização* (evita zeros), mistura doc + coleção:
   $ P(w|d) = (1 - lambda) P(w|d) + lambda P(w|C) $
 ]
-Ex.: "banco de dados"; $d_1$ "Curso de banco de dados relacional" → $P(q|d_1) = 1\/6 dot 2\/6 dot 1\/6 approx 0.00926$; $d_2$ "O banco oferece dados de investimentos" → $approx 0.00463$. Com bigramas, $d_2$ zera ($P("de"|"banco") = 0$).
 
-Limitação dos clássicos (QLM, vetorial): só evidência lexical; sem sinônimos, paráfrases ou contexto.
+#example[
+"banco de dados"
+
+- $d_1$ "Curso de banco de dados relacional" → $P(q|d_1) = 1/6 dot 2/6 dot 1/6 approx 0.00926$
+- $d_2$ "O banco oferece dados de investimentos" → $P(q|d_1) = 1/6 dot 1/6 dot 1/6 approx 0.00463$. Com bigramas, $d_2$ zera ($P("de"|"banco") = 0$)
+]
+
+Limitação dos clássicos (QLM, vetorial): *só evidência lexical*; sem sinônimos, paráfrases ou contexto.
 
 == Embeddings
 
-*Representação distribuída:* palavra → vetor denso (carro → [0.21, −0.43, 0.72, ...]); palavras relacionadas ficam próximas. *Hipótese distribucional:* "You shall know a word by the company it keeps".
+*Problema do BoW/TF-IDF:* cada termo é uma dimensão independente. "carro" e "automóvel" são tão diferentes quanto "carro" e "banana", então uma consulta com um não acha documentos com o outro.
 
-*Word2Vec:* *CBOW* (contexto → palavra) e *Skip-gram* (palavra → contexto; aprende $P(k_i|k_j)$ com pares de uma janela). Propriedades: similaridade por cosseno e relações por aritmética: $"king" - "man" + "woman" approx "queen"$; $"Paris" - "France" + "Italy" approx "Rome"$. *Limitação:* *um vetor estático por palavra* ("banco" igual em "sacar dinheiro" e "praça").
+#v(10pt)
 
-*BERT:* Transformer, embeddings *contextuais* (contexto à esquerda e à direita). *Transformer:* mecanismo de *atenção* (cada palavra "olha" as outras com pesos); processa tokens *em paralelo* (≠ RNN) → modelos maiores.
+*Representação distribuída (embedding):* cada palavra vira um *vetor denso* de poucas centenas de dimensões (carro → [0.21, −0.43, 0.72, ...]), aprendido de forma que *palavras com significado parecido fiquem próximas* no espaço. Similaridade = *cosseno* entre os vetores.
 
-== Cross-encoder × Bi-encoder
+#v(10pt)
+
+*Hipótese distribucional:* "You shall know a word by the company it keeps". Palavras que aparecem nos mesmos contextos têm significados parecidos. "carro" e "automóvel" aparecem perto de "dirigir", "motor", "estacionar" → acabam com vetores próximos.
+
+=== Word2Vec
+
+Treina uma rede simples numa tarefa de "adivinhar palavras" a partir de uma janela de texto. Os vetores são o subproduto do treino.
+- *CBOW:* contexto → palavra. "o \_\_\_ freou no sinal" → carro.
+- *Skip-gram:* palavra → contexto. Dado "carro", prever "freou", "sinal"… (aprende $P(k_i | k_j)$ com os pares da janela).
+
+*Propriedade surpreendente:* relações viram *direções* no espaço, então dá para fazer aritmética:
+- $"king" - "man" + "woman" approx "queen"$ (direção "gênero")
+- $"Paris" - "France" + "Italy" approx "Rome"$ (direção "capital de")
+
+*Limitação:* *um vetor fixo por palavra*. "banco" tem o mesmo vetor em "sacar dinheiro no banco" e "sentar no banco da praça", uma mistura dos dois sentidos.
+
+=== BERT
+
+Resolve a limitação: gera embeddings *contextuais*. O vetor de "banco" é calculado a partir da frase inteira (palavras à *esquerda e à direita*), então cada ocorrência tem seu próprio vetor.
+
+É baseado no *Transformer*:
+- *Atenção:* para representar cada palavra, o modelo "olha" todas as outras da frase com pesos diferentes. Em "sacar dinheiro no banco", "banco" presta muita atenção em "sacar" e "dinheiro".
+- *Processa todos os tokens em paralelo* (uma RNN lê um por vez) → treina muito mais rápido → permite modelos bem maiores.
+
+== Bi-encoder × Cross-encoder
+
+Duas formas de usar o BERT para dar uma nota a um par (consulta, documento):
 
 #fig("images/bicross.png", w: 100%)[Bi-encoder (SBERT): consulta e documento codificados separadamente. Cross-encoder (BERT): par `[CLS] consulta [SEP] documento [SEP]` → $"score" = f(h_"CLS")$.]
 
-#table(
-  columns: (1fr, 1fr),
-  [Bi-encoder (Sentence-BERT)], [Cross-encoder (BERT)],
-  [codifica separadamente; $"score" = cos(arrow(q), arrow(d))$], [consulta + doc juntos; interação direta entre tokens],
-  [docs *pré-computados* → índice vetorial, rápido, escalável], [1 milhão de docs = rodar BERT 1 milhão de vezes],
-  [ótimo para *recuperação inicial*], [ótimo para *reranking* (mais preciso)],
-  [perde detalhes finos; nem sempre captura termos específicos], [caro; não pré-computa],
-)
-Pipeline comum: #flow[Bi-encoder (top 100–1000)][Cross-encoder (reranking)][ranking final]
+- *Bi-encoder (Sentence-BERT):* gera *um vetor para a consulta* e *um vetor para o documento*, cada um sozinho; $"score" = cos(arrow(q), arrow(d))$.
+- *Cross-encoder:* coloca consulta e documento *na mesma entrada* do BERT. A atenção cruza os tokens dos dois, e o modelo devolve o score direto.
 
-*Quando usar:* lexical para `ERR_CONNECTION_RESET`, CID-10 E11.9, RTX 5090, nomes próprios, termos raros; semântica para "minha conexão cai toda hora", "carro que consome pouca gasolina", paráfrases.
+A diferença-chave: no bi-encoder, o vetor do documento *não depende da consulta* → dá para calcular todos *antes*, uma vez só.
+
+#table(
+  columns: (auto, 1fr, 1fr),
+  [], [Bi-encoder (SBERT)], [Cross-encoder (BERT)],
+  [Como codifica], [separado; compara vetores], [junto; tokens interagem],
+  [Custo na consulta], [docs pré-computados num *índice vetorial*: só codifica a consulta e busca vizinhos → rápido], [roda o BERT *uma vez por documento*: 1 mi docs = 1 mi execuções],
+  [Precisão], [perde detalhes finos e termos específicos], [mais preciso],
+  [Uso ideal], [*recuperação inicial*], [*reranking*],
+)
+
+*Pipeline comum:* o rápido filtra e o preciso ordena poucos.
+#flow[Bi-encoder: top 100–1000 de milhões][Cross-encoder: reranking desses poucos][ranking final]
+
+== Lexical × semântica: quando usar
+
+- *Lexical (BM25):* quando o termo *exato* importa e embeddings tendem a "aproximar" errado: `ERR_CONNECTION_RESET`, CID-10 E11.9, RTX 5090, nomes próprios, termos raros.
+- *Semântica (embeddings):* quando o usuário descreve com *outras palavras*: "minha conexão cai toda hora", "carro que consome pouca gasolina", paráfrases.
+
+Na prática, muitos sistemas combinam os dois (busca *híbrida*).
 
 #table(
   columns: 4,
-  [Modelo], [Representação], [Contextual?], [Unidade],
+  [Modelo], [Representação], [Contextual?], [Gera vetor de],
   [BoW], [esparsa], [não], [documento],
   [TF-IDF], [esparsa], [não], [documento],
-  [Word2Vec], [densa], [não], [palavra],
+  [Word2Vec], [densa], [não], [palavra (fixo)],
+  [BERT], [densa], [sim], [cada token na frase],
   [Sentence-BERT], [densa], [sim], [sentença/documento],
 )
 
 = Representação, Consultas e Inferência Semântica (Aula 10)
 
+*Ideia central:* embeddings sabem que coisas são *parecidas*, mas não sabem *como* se relacionam. Para isso, o conhecimento precisa estar escrito explicitamente.
+
 #table(
   columns: (1fr, 1fr),
-  [Semântica *implícita*], [Semântica *explícita*],
-  [embeddings; significado distribuído em vetores], [entidades, relações e regras (grafos de conhecimento)],
-  [proximidade = relação semântica], [entidades/propriedades nomeadas],
-  [boa p/ textos e paráfrases; menos interpretável], [boa p/ consultas precisas; *permite inferência*],
+  [Semântica *implícita* (embeddings)], [Semântica *explícita* (grafos de conhecimento)],
+  [significado espalhado nos números de um vetor], [entidades e relações *com nome*],
+  ["carro" está *perto* de "automóvel"], ["Ana *orienta* Carlos"],
+  [boa para texto livre e paráfrases], [boa para consultas precisas; *permite inferência*],
+  [difícil explicar por que dois itens são similares], [interpretável: dá para mostrar o caminho],
 )
-Limites dos embeddings: relações explícitas ficam escondidas; difícil explicar a similaridade; consultas com restrições ("quem orientou o aluno que publicou o artigo X?" = artigo → autor → orientador) exigem *estrutura*. Busca textual devolve docs ranqueados; consulta estruturada devolve *entidades que satisfazem um padrão*. Nenhuma é universalmente melhor.
 
-- *Entidade:* objeto/conceito identificável (pessoa, lugar, instituição...). Nomes diferentes podem ser a mesma entidade (USP = Universidade de São Paulo = University of São Paulo).
-- *Relação:* conexão nomeada (`autor_de`, `orientador_de`, `localizado_em`); torna o conhecimento navegável.
+*Limites dos embeddings:*
+- A relação existe, mas fica escondida: o vetor não diz *qual* é a ligação entre dois itens.
+- Consultas com *várias restrições encadeadas* exigem estrutura: "quem orientou o aluno que publicou o artigo X?" = artigo → autor → orientador. Nenhuma similaridade de vetores segue esse caminho.
+
+*Tipo de resposta:* 
+
+- Busca textual/vetorial devolve *documentos ranqueados*
+- Consulta estruturada devolve *entidades que satisfazem um padrão*. 
+
+Nenhuma é universalmente melhor.
+
+== Blocos do conhecimento explícito
+
+- *Entidade:* algo identificável (pessoa, lugar, instituição...). Nomes diferentes podem ser a *mesma* entidade: USP = Universidade de São Paulo = University of São Paulo.
+- *Relação:* ligação *com nome* entre entidades (`autorDe`, `orienta`, `localizadoEm`). É o que torna o conhecimento *navegável*: dá para ir de uma entidade à outra.
 
 #Highlight2("RDF")[
-  Padrão da Web: fatos como *triplas (sujeito, predicado, objeto)*, ex. (Artigo X, temAutor, Aluno A). Conjunto de triplas = *grafo* (nós = entidades, arestas = relações). Identificadores *URIs* (`http://exemplo.org/pessoa/Ana`) evitam ambiguidade; *vocabulários* padronizam classes/propriedades.
+  Padrão da Web para escrever fatos como *triplas (sujeito, predicado, objeto)*, lidas como uma frase: (ArtigoX, temAutor, Carlos) = "o Artigo X tem como autor Carlos".
 
-  Ex.: "Ana é professora da USP. Ana orienta Carlos. Carlos é autor do Artigo X." → (Ana, rdf:type, Professor), (Ana, afiliadaA, USP), (Ana, orienta, Carlos), (Carlos, autorDe, ArtigoX).
+  - Juntando as triplas, forma-se um *grafo*: nós = entidades, arestas = relações.
+  - Cada entidade tem um *URI* (`http://exemplo.org/pessoa/Ana`), um "RG" único que evita ambiguidade entre duas "Ana".
+  - *Vocabulários* padronizam os nomes das classes e propriedades (ex.: `rdf:type` = "é um(a)").
+
+  Ex.: "Ana é professora da USP. Ana orienta Carlos. Carlos é autor do Artigo X." →
+  (Ana, rdf:type, Professor) · (Ana, afiliadoA, USP) · (Ana, orienta, Carlos) · (Carlos, autorDe, ArtigoX).
 ]
 
-*Ontologia:* modelo conceitual do domínio — *classes, propriedades, relações e restrições*. Elementos: *classe* (Professor), *instância* (Carolina), *propriedade* (orienta, `rdf:type`). Separa conhecimento geral dos fatos. Permite *hierarquias* (Professor ⊂ Pesquisador ⊂ Pessoa). *Grafo de conhecimento* = ontologia + entidades concretas e relações; apoia busca, recomendação, explicação e RAG.
+*Ontologia:* o "esquema" do domínio. Define *que tipos de coisas existem e como podem se relacionar*, sem falar de ninguém em particular.
+- *Classe:* um tipo (Professor). *Instância:* um caso concreto (Ana). *Propriedade:* uma relação ou atributo (orienta, `rdf:type`).
+- *Hierarquias:* Professor ⊂ Pesquisador ⊂ Pessoa → todo professor é pessoa.
+- Separa o *conhecimento geral* ("professores orientam alunos") dos *fatos* ("Ana orienta Carlos").
 
-#dica[Grafo: Ana pesquisa RI; Ana afiliadaA ICMC; ICMC parteDe USP; Artigo1 temAutor Ana. *Não* dá para responder "quais artigos *sobre RI* foram publicados por pesquisadores da USP?" — o grafo não diz o tema do Artigo1.]
+*Grafo de conhecimento* = ontologia (o esquema) + entidades e relações concretas (os dados). Apoia busca, recomendação, explicação e RAG.
 
-== SPARQL e inferência
+#dica[Grafo: Ana pesquisa RI · Ana afiliadoA ICMC · ICMC parteDe USP · Artigo1 temAutor Ana.
 
-Linguagem de consulta para RDF: descreve *padrões de triplas*; variáveis (`?x`) indicam o que se quer; resultado = o que satisfaz *todos* os padrões (interseção).
+  "Quais artigos *sobre RI* foram publicados por pesquisadores da USP?" → *não dá para responder*: o grafo diz que *Ana* pesquisa RI, mas não diz o *tema do Artigo1*. O grafo só responde com o que está nele (ou com o que pode ser *inferido*, veja abaixo).]
+
+== SPARQL: consultando o grafo
+
+Você escreve *triplas com lacunas* (variáveis `?x`), e o sistema procura no grafo valores que preencham *todas* as lacunas ao mesmo tempo (cada padrão é uma restrição, e o resultado é a interseção).
+
 ```sparql
 SELECT ?professor WHERE {
-  ?professor :pesquisa :RI .
+  ?professor :pesquisa  :RI .
   ?professor :afiliadoA :USP .
 }
 ```
-Wikidata: `?cidade wdt:P131 wd:Q175` (cidades em SP); `?filme wdt:P31 wd:Q11424; wdt:P136 wd:Q157443; wdt:P161 wd:Q47100` (filme, comédia, Ben Stiller); `SERVICE wikibase:label { bd:serviceParam wikibase:language "pt". }`.
+Lê-se: "ache todo `?professor` que pesquisa RI *e* é afiliado à USP".
 
-*Inferência:* fatos + regras → novos fatos (responde mesmo sem o fato armazenado).
-- *Regras:* autorDe + ... ⇒ relacionadaA (cria relação não armazenada).
-- *Transitiva:* ICMC parteDe USP, USP localizadaEm São Paulo ⇒ ICMC em São Paulo (depende do significado das propriedades).
-- *Hierarquia:* `:Ana rdf:type :Professor` + `:Professor rdfs:subClassOf :Pessoa` ⇒ `:Ana rdf:type :Pessoa`.
+Atenção: no grafo da dica, Ana é afiliada ao *ICMC*, não diretamente à USP → essa consulta *não* a encontra sem inferência.
 
-*KGs conhecidos:* Wikidata, DBpedia (Wikipedia), UMLS/MeSH/SNOMED CT (biomédico), Gene Ontology, ChEBI (química), GeoNames, CIDOC CRM (patrimônio), BIBFRAME (bibliográfico), OpenAlex (científico), schema.org (produtos/organizações).
+*Exemplos no Wikidata* (entidades e propriedades são códigos: `wd:Q…` = entidade, `wdt:P…` = propriedade):
+- `?cidade wdt:P131 wd:Q175` → itens localizados no estado de SP.
+- `?filme wdt:P31 wd:Q11424; wdt:P136 wd:Q157443; wdt:P161 wd:Q47100` → é um filme; gênero comédia; elenco inclui Ben Stiller. O `;` repete o mesmo sujeito.
+- `SERVICE wikibase:label { bd:serviceParam wikibase:language "pt". }` → troca os códigos por nomes legíveis em português.
 
-*Desafios:* exige modelagem; reconhecer/desambiguar entidades é difícil; grafo incompleto/desatualizado; regras mal definidas → inferências erradas; nem toda necessidade cabe numa consulta estruturada.
+== Inferência: deduzir o que não está escrito
 
-#dica[Qual abordagem? "RTX 5090 benchmark CUDA 13" → *textual*; "reduzir consumo de energia em edifícios" → *vetorial*; "artigos de professores da USP que trabalham com RI" → *estruturada* (ou combinação); "hipertensão sem usar 'pressão alta'" → *vetorial*.]
+*Fatos + regras ⇒ novos fatos.* Permite responder mesmo quando o fato não foi armazenado.
+
+- *Hierarquia de classes:* `:Ana rdf:type :Professor` + `:Professor rdfs:subClassOf :Pessoa` ⇒ `:Ana rdf:type :Pessoa`.
+- *Propriedade transitiva:* se `parteDe` é transitiva: ICMC parteDe USP + USP parteDe SistemaEstadual ⇒ ICMC parteDe SistemaEstadual.
+- *Encadeamento de propriedades:* regra "se X parteDe Y e Y localizadoEm Z, então X localizadoEm Z": ICMC parteDe USP + USP localizadoEm São Paulo ⇒ ICMC localizadoEm São Paulo.
+- *Regras do domínio:* "se X afiliadoA Y e Y parteDe Z, então X afiliadoA Z" ⇒ Ana afiliadoA USP. Agora a consulta SPARQL acima *encontra* Ana.
+
+Tudo isso depende do *significado declarado* das propriedades: o sistema só deduz o que as regras e a ontologia autorizam.
+
+*KGs conhecidos:* Wikidata, DBpedia (extraído da Wikipedia), UMLS/MeSH/SNOMED CT (biomédico), Gene Ontology, ChEBI (química), GeoNames (geografia), CIDOC CRM (patrimônio cultural), BIBFRAME (bibliográfico), OpenAlex (científico), schema.org (produtos/organizações na Web).
+
+*Desafios:*
+- Exige *modelar* o domínio (trabalhoso).
+- Reconhecer e desambiguar entidades no texto é difícil (que "Ana"? "USP" é a mesma que "Universidade de São Paulo"?).
+- O grafo é *incompleto/desatualizado*: o que não está lá não é respondido.
+- Regras mal definidas → inferências *erradas*.
+- Nem toda necessidade cabe numa consulta estruturada.
+
+#dica[Qual abordagem?
+  - "RTX 5090 benchmark CUDA 13" → *textual* (termos exatos, códigos).
+  - "reduzir consumo de energia em edifícios" → *vetorial* (conceito, muitas formas de dizer).
+  - "artigos de professores da USP que trabalham com RI" → *estruturada* (restrições encadeadas), ou combinação.
+  - "hipertensão sem usar 'pressão alta'" → *vetorial*. Mesmo que o documento não use o termo "hipertensão", o embedding aproxima os sinônimos.
+]
 
 = Busca Híbrida, Reranking e RAG (Aula 11)
 
-#flow[Encontrar candidatos][Combinar evidências][Reordenar melhores][Gerar resposta]
-RAG é uma *arquitetura composta*, não só um "modelo de busca".
+*Ideia central:* um bom sistema de busca não é um modelo só, mas uma *sequência de etapas*, cada uma mais cara e mais precisa que a anterior.
+#flow[Encontrar candidatos][Combinar evidências][Reordenar os melhores][Gerar resposta]
+RAG é uma *arquitetura composta* que encadeia essas etapas, e não apenas um "modelo de busca".
 
 == Busca esparsa × densa × híbrida
 
-- *Esparsa:* termos/pesos, vetores com muitos zeros ($[0, 0, 3.1, 0, 1.7, ...]$), índice invertido; forte quando a correspondência exata importa ("erro 404 nginx"). Ex.: vetorial, BIM, BM25.
-- *Densa:* embeddings ($[0.21, -0.43, 0.72, ...]$), vizinhos mais próximos, $cos(arrow(q), arrow(d))$; paráfrases ("pressão alta" ↔ "hipertensão arterial").
-- *Híbrida:* nenhum ranking isolado captura todas as evidências → combinar.
+- *Esparsa (lexical):* um peso por *termo do vocabulário*, quase todos zero ($[0, 0, 3.1, 0, 1.7, ...]$); usa índice invertido. Forte quando a *palavra exata* importa ("erro 404 nginx"). Ex.: modelo vetorial TF-IDF, BIM, BM25.
+- *Densa (semântica):* embeddings ($[0.21, -0.43, 0.72, ...]$), todas as posições preenchidas; busca os *vizinhos mais próximos* por $cos(arrow(q), arrow(d))$. Forte em *paráfrases* ("pressão alta" ↔ "hipertensão arterial").
+- *Híbrida:* cada uma erra onde a outra acerta. Nenhum ranking isolado captura todas as evidências → *combinar* os dois.
 
 #Highlight1("Fusão de rankings")[
-  *Por score:* $"score"(d) = alpha "score"_"lex"(d) + (1 - alpha) "score"_"sem"(d)$ — escalas diferentes ⇒ *normalizar*.
+  *Por score:* média ponderada das notas:
+  $ "score"(d) = alpha "score"_"lex"(d) + (1 - alpha) "score"_"sem"(d) $
+  Problema: as escalas são diferentes (BM25 pode dar 12,7; cosseno fica entre −1 e 1). Sem *normalizar* antes (ex.: min-max para [0, 1]), um dos lados domina.
 
-  *Por posição — Reciprocal Rank Fusion:*
+  *Por posição — Reciprocal Rank Fusion (RRF):* ignora os scores e usa só a *posição* em cada ranking:
   $ "RRF"(d) = sum_(r in R) 1/(k + "rank"_r (d)) $
-  $k$ controla o quanto o topo domina (usual $k = 60$). Evita comparar escalas; simples e robusto; quem aparece bem em vários rankings sobe.
+  - Quem aparece *bem colocado em vários rankings* acumula pontos e sobe.
+  - $k$ suaviza a diferença entre as posições (usual $k = 60$): com $k$ grande, ser 1º ou 5º muda pouco; com $k$ pequeno, o topo domina.
+  - Não precisa normalizar escalas → simples e robusto.
 ]
 
 #example[Lexical: D3, D7, D2 · Semântico: D5, D3, D8 ($k=60$).
 
-$"RRF"(D_3) = 1\/61 + 1\/62 = 0.0325$; $D_5 = 1\/61 = 0.0164$; $D_7 = 1\/62 = 0.0161$; $D_2 = D_8 = 1\/63 = 0.0159$.
+- $"RRF"(D_3) = 1\/61 + 1\/62 = 0.0325$ (aparece nos dois); 
+- $"RRF"(D_5) = 1\/61 = 0.0164$; 
+- $"RRF"(D_7) = 1\/62 = 0.0161$; 
+- $"RRF"(D_2) = "RRF"(D_8) = 1\/63 = 0.0159$.
 
-Final: *D3, D5, D7, D2/D8*.]
+Final: *D3, D5, D7, D2/D8*. D3 não foi 1º em nenhum ranking, mas ganha por aparecer nos dois.]
 
-*Geração de resultados em estágios:* 1ª etapa barata busca candidatos (*revocação*); 2ª etapa cara refina (*precisão*). #flow[1.000.000 docs][recuperação rápida][top-100][reranker preciso][top-10]
+*Resultados em estágios:* rodar o modelo mais preciso em milhões de documentos é caro demais. Então:
+- *1ª etapa, barata:* trazer quase tudo que pode ser relevante → foco em *revocação*.
+- *2ª etapa, cara:* ordenar bem esses poucos candidatos → foco em *precisão*.
+#flow[1.000.000 docs][recuperação rápida][top-100][reranker preciso][top-10]
 
 == Reranking
 
-Reordena os candidatos já recuperados (top-K) com sinais mais caros; *não substitui* a recuperação inicial.
+Reordena os candidatos *já recuperados* (top-K) usando sinais mais caros. *Não substitui* a recuperação inicial: só reordena o que recebeu.
 
 #table(
   columns: 4,
-  [Tipo], [Qualidade], [Custo], [Quando],
-  [Heurístico/regras (recência, autoridade, diversidade; pesos manuais)], [limitada], [muito baixo], [regras de negócio simples],
-  [Learning to Rank (RankSVM, LambdaMART; features BM25, TF-IDF, PageRank, cliques)], [alta], [baixo a médio], [bons atributos + dados de relevância],
-  [Neural (cross-encoder, monoBERT, monoT5)], [alta a muito alta], [médio a alto], [busca semântica, RAG],
-  [LLM-based (scores, par-a-par ou listas)], [potencialmente muito alta], [alto a muito alto], [consultas complexas, raciocínio],
+  [Tipo], [Qualidade], [Custo], [Quando usar],
+  [*Heurístico/regras:* recência, autoridade, diversidade; pesos definidos à mão], [limitada], [muito baixo], [regras de negócio simples],
+  [*Learning to Rank:* RankSVM, LambdaMART; features como BM25, TF-IDF, PageRank, cliques], [alta], [baixo a médio], [há bons atributos + dados de relevância],
+  [*Neural:* cross-encoder, monoBERT, monoT5], [alta a muito alta], [médio a alto], [busca semântica, RAG],
+  [*Baseado em LLM:* gera scores, compara pares ou ordena listas], [potencialmente muito alta], [alto a muito alto], [consultas complexas, que exigem raciocínio],
 )
-Ex.: $"score"(d) = w_1 "BM25"(d,q) + w_2 "PageRank"(d) + w_3 "recency"(d)$ — pesos manuais = heurístico; pesos aprendidos = LTR; aprende do texto = neural; instrução em linguagem natural = LLM. Features podem precisar de normalização.
 
-*Trade-off:* recuperação inicial rápida/escalável; reranking preciso/caro em poucos itens; geração depende da qualidade da recuperação.
+*Como os tipos se diferenciam*, a partir de uma mesma fórmula:
+$ "score"(d) = w_1 "BM25"(d,q) + w_2 "PageRank"(d) + w_3 "recency"(d) $
+
+OBS: PageRank = importância/autoridade da página com base nos links de outras páginas que apontam para ela. Recency = O quanto o documento é recente.
+
+- pesos $w_i$ escolhidos *à mão* → heurístico;
+- pesos *aprendidos* com dados de relevância → LTR (as features podem precisar de normalização);
+- o modelo lê o *texto* e aprende sozinho o que importa (sem features prontas) → neural;
+- o critério é uma *instrução em linguagem natural* ("ordene pela utilidade para…") → LLM.
+
+*Trade-off:* recuperação inicial = rápida e escalável; reranking = preciso, mas caro, então só em poucos itens; geração = só é tão boa quanto o que foi recuperado.
 
 == RAG (Retrieval-Augmented Generation)
 
 #fig("images/rag.png", w: 100%)[Arquitetura básica de RAG: offline (chunking → embeddings → índice vetorial) e online (consulta → recuperação top-k → seleção de contexto → prompt → LLM → resposta).]
 
-*Por quê?* LLM sozinha: conhecimento nos parâmetros, desatualizado, alucina. Com RAG: usa documentos externos, *cita fontes* (se a origem dos trechos é preservada), adapta-se ao domínio.
+*Por quê?* Uma LLM sozinha só sabe o que está nos *parâmetros*: o conhecimento fica desatualizado, ela não conhece documentos internos e alucina. Com RAG, a LLM responde *a partir de documentos buscados na hora*: atualizada, adaptada ao domínio e capaz de *citar fontes* (desde que a origem de cada trecho seja preservada).
 
-- *Chunking:* chunks pequenos → granularidade; grandes → mais contexto. *Overlap* (repete parte entre chunks) e *metadados* (fonte, seção, página, autor, data).
-- *Indexação:* RAG denso (embedding por chunk, índice vetorial); RAG híbrido (+ índice lexical) + metadados.
-- *Seleção de contexto:* nem todo chunk recuperado vai ao prompt; filtrar, reordenar, tirar redundância — contexto ruim → resposta ruim.
+*Fase offline (preparar a base):*
+- *Chunking:* quebrar os documentos em pedaços.
+  - Chunks *pequenos* → busca mais precisa, mas cada um tem pouco contexto.
+  - Chunks *grandes* → mais contexto, mas trazem ruído junto.
+  - *Overlap:* repetir um pouco do texto entre chunks vizinhos, para uma ideia não ser cortada ao meio.
+  - *Metadados* em cada chunk: fonte, seção, página, autor, data (para filtrar e citar).
+- *Indexação:* RAG denso = embedding de cada chunk num índice vetorial; RAG híbrido = índice vetorial + índice lexical (+ metadados).
+
+*Fase online (responder):* recuperar → *selecionar contexto* → montar prompt → LLM.
+
+*Seleção de contexto:* nem todo chunk recuperado deve ir ao prompt. A janela é limitada, e *contexto ruim → resposta ruim*.
 
 #table(
   columns: (auto, 1fr, auto),
   [Técnica], [Como funciona], [Objetivo],
-  [Top-K], [K chunks de maior score], [limitar quantidade],
-  [Threshold], [remove abaixo de um limiar], [tirar pouco relevantes],
-  [Reranking], [reavalia com cross-encoder], [melhorar relevância],
-  [MMR], [equilibra relevância e *diversidade*], [reduzir redundância],
-  [Deduplicação], [remove iguais/similares], [evitar repetição],
-  [Filtro por metadados], [data, fonte, permissões...], [adequação],
-  [Contextual compression], [extrai só o trecho necessário], [menos tokens],
-  [Seleção por cobertura], [chunks p/ aspectos diferentes], [evitar incompletude],
+  [Top-K], [fica com os K chunks de maior score], [limitar quantidade],
+  [Threshold], [descarta chunks abaixo de um score mínimo], [tirar pouco relevantes],
+  [Reranking], [reavalia os candidatos com cross-encoder], [melhorar relevância],
+  [MMR], [escolhe um chunk por vez: relevante para a consulta *e* diferente dos já escolhidos], [reduzir redundância],
+  [Deduplicação], [remove chunks iguais/quase iguais], [evitar repetição],
+  [Filtro por metadados], [data, fonte, permissões do usuário...], [adequação],
+  [Contextual compression], [extrai só a parte do chunk que responde à pergunta], [gastar menos tokens],
+  [Seleção por cobertura], [garante chunks para *cada aspecto* da pergunta], [evitar resposta incompleta],
 )
-*Prompt RAG:* instruções ("responda usando o contexto; se não houver evidência, diga") + contexto recuperado + pergunta.
 
-*Falhas de recuperação:* baixa revocação; chunk certo mas incompleto; ruído competindo; redundância ocupando a janela. *Alucinações:* responder além do contexto, combinar trechos errado, ignorar contradições, inventar — o sistema deve saber dizer *"não encontrado"*.
+*Prompt RAG* = instruções ("responda usando *apenas* o contexto; se não houver evidência, diga que não encontrou") + chunks recuperados + pergunta.
 
-#dica[Pipeline BM25 + densa → RRF → top-20 → cross-encoder → top-5 → RAG; o doc relevante (35º no BM25, 4º na densa) ficou em 22º após a fusão e nunca chegou ao reranker. Correto: *aumentar o nº de candidatos ao reranker pode melhorar o recall, mas aumenta custo/latência, sem garantia*. O reranker não enxerga o que não recebe; RRF não "obriga" posição 4; a culpa não é da LLM.]
+*Onde dá errado:*
+- *Na recuperação:* o chunk certo não veio (baixa revocação); veio, mas incompleto; veio misturado com ruído que compete com ele; chunks repetidos ocupam a janela.
+- *Na geração (alucinação):* responde além do que o contexto diz, combina trechos de forma errada, ignora contradições, inventa. Um bom sistema precisa saber dizer *"não encontrado"*.
+
+#dica[Pipeline: BM25 + densa → RRF → top-20 → cross-encoder → top-5 → RAG. O doc relevante estava em *35º no BM25* e *4º na densa*, mas ficou em *22º após a fusão* e nunca chegou ao reranker.
+
+*Por quê?* $"RRF" = 1\/95 + 1\/64 approx 0.026$. Docs medianos nos *dois* rankings (ex.: 10º e 10º: $2\/70 approx 0.029$) passam na frente dele.
+
+*Conclusão correta:* aumentar o nº de candidatos enviados ao reranker *pode* recuperá-lo, mas aumenta custo/latência e não dá garantia.
+
+*Armadilhas:* o reranker não enxerga o que não recebe; o RRF não "preserva" o 4º lugar de um ranking; a culpa não é da LLM, porque o doc nunca chegou a ela.]
 
 == Avaliação de RAG
 
-- *Recuperação* (independente da resposta): Recall\@K, Precision\@K, MRR, nDCG, *cobertura*.
-- *Resposta:* *correção*, *fidelidade* (suportada pelo contexto), *completude*, utilidade, *rastreabilidade*. Fluente ≠ correta.
-- *Ponta a ponta:* localizar onde falhou: #flow[Recuperação][Reranking][Contexto][Geração]
+Avaliar *cada etapa separadamente*, para saber onde está o problema:
+- *Recuperação* (sem olhar a resposta): os chunks certos vieram? Recall\@K, Precision\@K, MRR, nDCG, *cobertura* dos aspectos da pergunta.
+- *Resposta:* *correção* (está certa?), *fidelidade* (está apoiada no contexto, ou foi inventada?), *completude*, utilidade, *rastreabilidade* (dá para ver de onde veio cada afirmação?). Uma resposta *fluente* não é necessariamente *correta*.
+- *Ponta a ponta:* localizar em qual etapa falhou: #flow[Recuperação][Reranking][Contexto][Geração]
 
-*GraphRAG:* além de trechos, explora entidades/relações; extrai entidades e relações → constrói grafo → indexa docs e nós → recupera *trechos + subgrafos*. Ajuda em perguntas que exigem conectar informações. *Sistemas integrados:* busca lexical + vetorial + estruturada (SPARQL) → seleção de contexto → LLM.
+*GraphRAG:* RAG que também usa um *grafo de conhecimento*. Extrai entidades e relações dos docs → constrói o grafo → indexa docs e nós → recupera *trechos + subgrafos*. Ajuda em perguntas que exigem *conectar informações* espalhadas em vários documentos.
 
-*O que RAG não resolve:* não garante recuperar o doc certo nem contexto suficiente; não elimina alucinações; não dispensa avaliação nem curadoria; não resolve conflitos na base.
+*Sistemas integrados:* busca lexical + vetorial + estruturada (SPARQL) → seleção de contexto → LLM.
+
+*O que RAG não resolve:* não garante recuperar o doc certo nem contexto suficiente; não elimina alucinações; não dispensa avaliação nem curadoria da base; não resolve documentos que se contradizem.
 
 = Busca na Web (Aula 12)
 
-*Desafios dos dados:* distribuídos, voláteis, volume, não estruturados, redundância, qualidade, heterogeneidade, multimídia. *Dos usuários:* formular/interpretar consultas, personalização, interações, UI, rapidez e relevância.
+*Por que a Web é difícil?*
+- *Dados:* distribuídos, voláteis (mudam/somem), enorme volume, não estruturados, redundantes, qualidade variável, heterogêneos, multimídia.
+- *Usuários:* dificuldade de formular e interpretar consultas, personalização, interações, interface; esperam resposta *rápida e relevante*.
 
-*Números:* > 778 mi computadores (2010); > 285 mi servidores Web (2011) ≈ 1 servidor a cada 3 computadores; > 20 bi páginas estáticas (2005), tamanho dobra a cada 8 meses; páginas dinâmicas: infinitas. Formatos: HTML, GIF/JPEG, ASCII, PDF. Maioria não segue o padrão HTML; páginas pequenas; nº médio de links externos apontando ≈ 0 (links locais); diretórios e Web 2.0 evitam "ilhas"; em 2000 ~70% em inglês (outras línguas crescem mais rápido).
+*Números (históricos):*
+- > 778 mi computadores (2010); > 285 mi servidores Web (2011) ≈ 1 servidor a cada 3 computadores.
+- > 20 bi páginas estáticas (2005), dobrando a cada 8 meses; páginas *dinâmicas* (geradas sob demanda) são potencialmente infinitas.
+- Formatos: HTML, GIF/JPEG, ASCII, PDF. A maioria das páginas *não segue o padrão HTML* à risca, e as páginas são pequenas.
+- Links: a maioria das páginas não recebe *nenhum* link de outro site (nº médio ≈ 0; os links são quase todos internos). Diretórios e a Web 2.0 ajudam a evitar "ilhas" isoladas.
+- Idioma: em 2000, ~70% em inglês, mas outras línguas crescem mais rápido.
 
 == Grafo da Web (gravata-borboleta)
 
@@ -783,30 +982,61 @@ Ex.: $"score"(d) = w_1 "BM25"(d,q) + w_2 "PageRank"(d) + w_3 "recency"(d)$ — p
   gutter: 12pt,
   image("images/bowtie.png", width: 100%),
   [
-    Nós = páginas; arestas = links. Componentes: *IN* → *CORE (SCC)* → *OUT*, mais *TUBES* (IN→OUT sem passar pelo núcleo), *TENTACLES* e *desconectados*.
+    Nós = páginas; arestas = links. O formato lembra uma gravata-borboleta:
+    - *CORE (SCC):* o centro. De qualquer página dele se chega a qualquer outra.
+    - *IN:* chega ao CORE, mas não volta (ex.: páginas novas que ninguém linka ainda).
+    - *OUT:* alcançável a partir do CORE, mas sem caminho de volta (ex.: sites corporativos que só têm links internos).
+    - *TUBES:* caminhos de IN para OUT sem passar pelo CORE.
+    - *TENTACLES:* saem de IN ou chegam a OUT sem tocar no CORE.
+    - *Desconectados:* sem ligação com o resto.
 
-    *CORE* se divide em: *Pontes* (alcançáveis de IN e alcançam OUT), *Pontos de entrada* (alcançáveis de IN, não pontes), *Pontos de saída* (alcançam OUT, não pontes) e *Normais*.
+    *CORE por dentro:* *pontes* (alcançáveis de IN *e* alcançam OUT), *pontos de entrada* (só alcançáveis de IN), *pontos de saída* (só alcançam OUT) e *normais*.
 
-    O núcleo tem a *minoria dos sites*, mas *maior densidade de páginas*.
+    O núcleo tem a *minoria dos sites*, mas são os sites com *mais páginas*.
   ],
 )
 
 == Arquitetura de máquinas de busca
 
-- Consultas são respondidas *sem acessar as páginas originais* (só cópias locais); snippets usam cópias, apenas para o top-N.
-- *Centralizada coletor-indexador* (AltaVista): crawlers → repositório central → índice invertido. Retorna os $N$ primeiros (geralmente 10); para mais, *recomputa* ou usa conjunto parcial em memória; *nunca* computa a resposta completa. Não escalou no fim dos anos 90.
-- *Baseada em clusters:* índice *particionado por documentos* entre máquinas; arquitetura *replicada* (inclusive geograficamente, p/ latência); balancear coleta × consultas/indexação e carga entre clusters; tolerância a falhas por software (rotear para o cluster adequado; hardware barato substituído rotineiramente). Melhorias: cache, múltiplos índices, arquiteturas distribuídas (Harvest, Multisite).
+- A consulta é respondida *sem acessar as páginas originais*: tudo vem de *cópias locais* coletadas antes. Os snippets também saem dessas cópias e são gerados só para o top-N.
+- *Centralizada coletor-indexador* (AltaVista): crawlers → repositório central → índice invertido.
+  - Calcula só os $N$ primeiros resultados (geralmente 10). Se o usuário pede a próxima página, *recalcula* ou usa um conjunto parcial guardado em memória. *Nunca* computa a resposta completa.
+  - Não escalou com o crescimento da Web no fim dos anos 90.
+- *Baseada em clusters* (solução moderna):
+  - Índice *particionado por documentos*: cada máquina indexa uma parte da coleção, e a consulta vai a todas.
+  - *Replicação:* o mesmo índice em vários clusters, inclusive em países diferentes (menor latência e mais capacidade).
+  - Desafios: balancear coleta × indexação/consultas e a carga entre clusters.
+  - *Tolerância a falhas por software:* hardware barato quebra o tempo todo e é trocado rotineiramente; o software redireciona a consulta para um cluster saudável.
+  - Melhorias: cache de resultados, múltiplos índices, arquiteturas distribuídas (Harvest, Multisite).
 
 == Ranqueamento na Web
 
-Função mais difícil e mais importante. *4 desafios:* (1) avaliação adequada, (2) identificar qualidade, (3) prevenir *spam*, (4) definir/computar a função.
+A função mais difícil *e* mais importante. *4 desafios:*
 
-*Sinais:* *conteúdo* (contagem de palavras, layout: mais peso a títulos/cabeçalhos, proximidade de tags) · *estrutura* (links, *texto-âncora* como substituto da página alvo, nº de links de entrada/saída) · *uso* (cliques/feedback implícito, geolocalização, SO/navegador, histórico via cookies).
++ Avaliar se o ranking está bom
++ Identificar páginas de qualidade
++ Resistir a *spam* (páginas manipuladas para subir)
++ Definir e calcular a função em escala.
+
+*Sinais usados:*
+- *Conteúdo:* frequência das palavras; *layout* (termo no título/cabeçalho pesa mais); proximidade entre termos e tags.
+- *Estrutura (links):* nº de links de entrada/saída; *texto-âncora*, o texto clicável que aponta para a página, usado como "descrição" dela escrita por outros.
+- *Uso:* cliques (feedback implícito), localização, SO/navegador, histórico (cookies).
 
 #Highlight1("PageRank")[
-  Usuário que navega aleatoriamente (*random surfer*): segue um link de saída ao acaso; com probabilidade $1 - d$ salta para página aleatória.
+  *Intuição:* uma página é importante se *páginas importantes* apontam para ela. Imagine um usuário navegando ao acaso (*random surfer*):
+  - com probabilidade $d$, clica num link aleatório da página atual;
+  - com probabilidade $1 - d$, se cansa e salta para uma página qualquer.
+
+  O PageRank mede o quanto ele visita cada página a longo prazo.
   $ "PR"(a) = (1 - d) + d sum_(i=1)^n ("PR"(p_i))/(L(p_i)) $
-  $d$ = fator de amortecimento (ex.: 0.85); $L(p)$ = nº de links de saída de $p$; $p_1..p_n$ = páginas que apontam para $a$. Páginas sem saída: usar $d = 0$ nelas ou removê-las e calcular no fim pelo PR dos pais. Cálculo *iterativo* (ciclos impedem cálculo direto).
+  - $p_1..p_n$ = páginas que *apontam para* $a$;
+  - $L(p)$ = nº de links de *saída* de $p$: cada página *divide* seu PR igualmente entre os links que faz;
+  - $d$ = fator de amortecimento (ex.: 0.85).
+
+  *Páginas sem links de saída* "prendem" o surfer. Soluções: usar $d = 0$ nelas, ou removê-las, calcular o resto e depois calcular o PR delas a partir das páginas que apontam para elas.
+
+  *Cálculo iterativo:* o PR de A depende do de B, que depende do de A (ciclos). Então começa-se com um chute e repete-se a fórmula até os valores estabilizarem.
 ]
 
 #grid(
@@ -828,23 +1058,45 @@ Função mais difícil e mais importante. *4 desafios:* (1) avaliação adequada
   })),
   [
     #set text(size: 0.9em)
-    A→B, B→A, B→C, C→A ($L(B) = 2$). Início: PR = 0.
+    - A→B, B→A, B→C, C→A. 
+    - Saídas: $L(A) = 1$, $L(B) = 2$, $L(C) = 1$. 
+    - Início: PR = 0, $d = 0.85$.
 
-    *1ª iter.:* $"PR"(A) = 0.15 + 0.85(0\/2 + 0\/1) = 0.15$; $"PR"(B) = 0.15 + 0.85(0.15) = 0.2775$; $"PR"(C) = 0.15 + 0.85(0.2775\/2) = 0.2679$.
+    Quem aponta para quem: A ← B, C · B ← A · C ← B.
 
-    *2ª iter.:* $"PR"(A) = 0.15 + 0.85(0.2775\/2 + 0.2679) = 0.4956$; $"PR"(B) = 0.5712$; $"PR"(C) = 0.3927$.
+    Os valores *já atualizados na mesma iteração* são reaproveitados (A, depois B, depois C).
+
+    *1ª iter.:* 
+    
+    - $"PR"(A) = 0.15 + 0.85(0\/2 + 0\/1) = 0.15$
+    - $"PR"(B) = 0.15 + 0.85(0.15\/1) = 0.2775$
+    - $"PR"(C) = 0.15 + 0.85(0.2775\/2) = 0.2679$.
+
+    *2ª iter.:* 
+    
+    - $"PR"(A) = 0.15 + 0.85(0.2775\/2 + 0.2679\/1) = 0.4956$
+    - $"PR"(B) = 0.15 + 0.85(0.4956) = 0.5712$
+    - $"PR"(C) = 0.15 + 0.85(0.5712\/2) = 0.3927$.
   ],
 )
 
-*Funções de ranqueamento:* simples = global (PageRank), independente da consulta (a consulta só seleciona). Sofisticada = combinação linear:
+*Funções de ranqueamento:*
+- *Simples:* ordenar só pelo PageRank. É *global*, calculado uma vez e independente da consulta; a consulta só *seleciona* quais páginas entram.
+- *Sofisticada:* combinar relevância textual e importância:
 $ R(p, q) = alpha F(p, q) + (1 - alpha) "PR"(p) $
-$F$ = ranking textual; $alpha$ ajustado com dados rotulados ou cliques; pode depender da consulta (consultas *navegacionais* → $alpha$ menor, mais peso aos links).
+$F$ = ranking textual (ex.: BM25); $alpha$ ajustado com dados rotulados ou cliques. Pode variar por tipo de consulta: em consultas *navegacionais* ("site do Itaú"), o usuário quer *a* página oficial → $alpha$ menor, mais peso aos links.
 
 == Interação com o usuário
 
-- Interface de *simplicidade extrema*: caixa de busca; busca avançada; plugins; *ultimate rectangle* (Chrome: barra de endereço = busca).
-- Consultas = sequência de palavras, geralmente com *AND implícito*. Operadores *unários* (`+`, `-`, `site:`), *binários* (`OR`), *delimitadores* (aspas = frase exata). Específicos: Ask (`afterdate:`, `beforedate:`, `betweendate:`, `last:`), Bing (`AND/&`, `()`, `filetype:`, `contains:`, `ip:`, `feed:`, `prefer:`), Google (wildcard `*`), Yahoo (`link:`).
-- *Sugestões dinâmicas* (autocomplete — já existia em Emacs/shell): correção ortográfica, filtrar inapropriadas, remover duplicadas, diversidade, novidade, personalização.
-- *Resultados estruturados:* Google Onebox (resposta única: "who is the governor of california"), Universal search (imagens, vídeos, mapas), Ask (respostas de Q&A sem snippet), Bing/Google ("de São Paulo para Belém" → rotas).
-- *Did You Mean* (Google): em vez de dicionário + edit distance, usa a *frequência da grafia correta nos logs* ("sabedoria das massas": britney spears × britinei spers). Sem logs grandes: outros sinais (usuário reformulando a mesma consulta em seguida).
-- Pesquisa: layout da página, snippets em tempo de execução, Q&A, personalização, recomendação e refinamento interativo de consultas.
+- *Interface de simplicidade extrema:* uma caixa de busca (+ busca avançada, plugins). *Ultimate rectangle:* a barra de endereço do Chrome também é a caixa de busca.
+- *Sintaxe das consultas:* uma sequência de palavras com *AND implícito*.
+  - Unários: `+`, `-` (excluir), `site:`. Binários: `OR`. Delimitadores: aspas (frase exata).
+  - Específicos por buscador: Ask (`afterdate:`, `beforedate:`, `betweendate:`, `last:`), Bing (`AND/&`, `()`, `filetype:`, `contains:`, `ip:`, `feed:`, `prefer:`), Google (curinga `*`), Yahoo (`link:`).
+- *Sugestões dinâmicas (autocomplete),* ideia que já existia no Emacs e no shell. Precisa de correção ortográfica, filtro de sugestões inapropriadas, remoção de duplicadas, diversidade, novidade e personalização.
+- *Resultados estruturados:* a resposta vai além de "10 links azuis":
+  - Google Onebox: resposta direta ("who is the governor of california");
+  - Universal search: mistura imagens, vídeos e mapas;
+  - Ask: respostas de Q&A, sem snippet;
+  - Bing/Google: "de São Paulo para Belém" → rota.
+- *Did You Mean* (Google): em vez de dicionário + edit distance, usa os *logs*. Se muita gente busca "britney spears" e pouca busca "britinei spers", a grafia mais frequente é sugerida ("sabedoria das massas"). Sem logs grandes, usam-se outros sinais, como o usuário *reformular a consulta logo em seguida*.
+- *Temas de pesquisa:* layout da página de resultados, snippets gerados em tempo de execução, Q&A, personalização, recomendação e refinamento interativo de consultas.

@@ -1068,10 +1068,23 @@ Funções:
 
 Estrutura (ex: Intel 82C55A): registradores de dados (buffer) e de estado/controle; linhas de controle com a CPU; lógica de interface para cada dispositivo.
 
+#figure(image("images/image-44.png", width: 75%), caption: [Estrutura de um módulo de E/S (Intel 82C55A)])
+
 === Endereçamento de E/S
 
 - *Mapeada em memória (memory-mapped)*: *um único espaço* de endereços para memória e E/S. Registradores do módulo são vistos como posições de memória → usa as mesmas instruções (`lw`/`sw`).
 - *Isolada / independente (port-mapped)*: espaços *separados*; uma linha de controle indica se o acesso é à memória ou à E/S; *instruções próprias* de E/S. Ex: 10 linhas de endereço → 1024 endereços de memória + 1024 de E/S.
+
+#figure(
+  grid(columns: 1, gutter: 8pt,
+    image("images/image-45.png", width: 60%),
+    grid(columns: 2, gutter: 10pt,
+      image("images/image-46.png"),
+      image("images/image-47.png"),
+    ),
+  ),
+  caption: [Leitura do teclado: mapeada em memória (registradores 516/517 lidos com `Load`) × isolada (instruções próprias `Load I/O`, `Test I/O`)],
+)
 
 === Técnicas de E/S
 
@@ -1081,6 +1094,15 @@ Estrutura (ex: Intel 82C55A): registradores de dados (buffer) e de estado/contro
   table.header([], [*Sem interrupção*], [*Com interrupção*]),
   [*Transferência via CPU*], [E/S programada], [E/S dirigida por interrupção],
   [*Transferência direta E/S ↔ memória*], [-], [DMA],
+)
+
+#figure(
+  grid(columns: (28%, 26%, 21%), gutter: 12pt, align: top,
+    image("images/image-48.png"),
+    image("images/image-49.png"),
+    image("images/image-50.png"),
+  ),
+  caption: [Fluxo de leitura de um bloco: E/S programada, por interrupção e DMA],
 )
 
 ==== E/S programada
@@ -1097,7 +1119,11 @@ Estrutura (ex: Intel 82C55A): registradores de dados (buffer) e de estado/contro
   2. PC ← endereço da *ISR* (Interrupt Service Routine).
   3. Executa a ISR.
   4. Restaura o contexto e continua o programa.
+
+#figure(image("images/image-51.png", width: 75%), caption: [Salvamento de contexto na pilha: (a) interrupção após a instrução em N; (b) retorno])
 - Ex: controlador *8259A* (8 linhas de interrupção, para o 8086 que só tem 1): recebe interrupções → define prioridade → ativa INTR → CPU reconhece → 8259A coloca o *vetor* no barramento de dados → CPU trata.
+
+#figure(image("images/image-52.png", width: 70%), caption: [Controlador de interrupções 8259A])
 
 ==== DMA (Direct Memory Access)
 
@@ -1107,15 +1133,30 @@ Programada e por interrupção têm taxa limitada pela CPU e a sobrecarregam. Co
 2. CPU continua o processamento; DMA transfere o bloco palavra por palavra.
 3. DMA termina e envia *interrupção* à CPU (1 interrupção por bloco, não por palavra).
 
+#figure(image("images/image-53.png", width: 55%), caption: [Módulo de DMA])
+
 Modos de uso do barramento:
 - *Roubo de ciclo*: DMA força o uso do barramento e suspende a CPU por um ciclo (logo antes de ela acessar o barramento). *Não é interrupção*: não há troca de contexto. Atrasa a CPU, mas menos que ela fazendo a transferência.
 - *Transparente*: DMA usa o barramento só quando a CPU não está usando. Mais lento.
+
+#figure(image("images/image-54.png", width: 65%), caption: [Pontos de interrupção (fim do ciclo de instrução) × pontos de DMA (roubo de ciclo, dentro do ciclo)])
 
 Configurações:
 - *Barramento único, DMA separado*: cada transferência usa o barramento *2 vezes* (E/S → DMA, DMA → memória). Barato, ineficiente.
 - *Barramento único, DMA–E/S integrados* ou *barramento de E/S próprio*: usa o barramento do sistema *1 vez* (DMA → memória). Permite comunicação DMA–dispositivo em paralelo com a CPU.
 
+#figure(
+  grid(columns: 1, gutter: 10pt,
+    image("images/image-55.png", width: 70%),
+    image("images/image-56.png", width: 70%),
+    image("images/image-57.png", width: 70%),
+  ),
+  caption: [Configurações de DMA],
+)
+
 Ex: Intel 8237A (memória → disco): dispositivo ativa *DREQ* → DMA ativa *HRQ* (hold request) → CPU termina ciclo de barramento e ativa *HLDA* (hold ack) → DMA ativa *DACK* → DMA coloca endereço, ativa MEMR e IOW → decrementa contador e incrementa endereço até 0 → desativa HRQ, devolvendo o barramento.
+
+#figure(image("images/image-58.png", width: 70%), caption: [DMA com o Intel 8237A (memória → disco)])
 
 === Evolução do subsistema de E/S
 
@@ -1152,7 +1193,11 @@ Ex: Intel 8237A (memória → disco): dispositivo ativa *DREQ* → DMA ativa *HR
 
 Caminho de comunicação *compartilhado* entre dois ou mais dispositivos. Só *um* dispositivo pode transmitir por vez. Barramento de sistema: 50 a 100 linhas.
 
+O barramento nada mais é do que uma conexão (linha) entre diferentes dispositivos. Não possui componentes eletrônicos.
+
 === Estrutura
+
+#figure(image("images/image-31.png", width: 80%))
 
 - *Linhas de dados*: transmitem dados (e instruções; não há distinção nesse nível). *Largura* (8, 16, 32, 64 bits) afeta o *desempenho*.
 - *Linhas de endereço*: origem/destino dos dados (memória e portas de E/S). Largura determina a *capacidade máxima de memória*.
@@ -1161,13 +1206,19 @@ Caminho de comunicação *compartilhado* entre dois ou mais dispositivos. Só *u
 === Barramento único x hierarquia
 
 - Ponto a ponto entre tudo: ideal, mas caro e complicado.
-- *Barramento comum*: muitos dispositivos → barramento mais longo, mais atraso de propagação, sem paralelismo.
+- *Barramento comum*: muitos dispositivos → barramento mais longo, mais atraso de propagação, sem paralelismo (só um componente pode transmitir por vez, ele declara posse do barramento). Foi a primeira forma de barramento.
 - Solução: *hierarquia de barramentos*:
   - *Processador*: interno à CPU.
   - *Cache*: dedicado ao acesso à cache.
   - *Memória (system bus)*: processador ↔ memória.
   - *E/S local (high speed)*: dispositivos de desempenho crítico (vídeo, armazenamento, rede rápida). Ex: VLB, PCI, AGP.
   - *E/S padrão (expansion)*: dispositivos lentos (mouse, modem, som). Ex: ISA, EISA.
+
+#figure(image("images/image-32.png", width: 75%), caption: [ISA (com cache)])
+
+#figure(image("images/image-33.png", width: 75%), caption: [Barramento de alto desempenho])
+
+#figure(image("images/image-34.png", width: 80%), caption: [PCI (sistema desktop típico)])
 
 === Mestre e escravo
 
@@ -1187,11 +1238,19 @@ Caminho de comunicação *compartilhado* entre dois ou mais dispositivos. Só *u
   - Prioridade fixa (risco de *monopólio*).
   - *Round-robin*: cada mestre por vez, ciclicamente.
   - *Prioridade variante*: prioridade aumenta a cada pedido negado e volta ao valor inicial quando atendido.
-- *Distribuída*: sem árbitro; cada mestre coloca seu código nas linhas de arbitragem e o de maior prioridade vence.
+- *Distribuída*: sem árbitro; cada mestre coloca seu código nas linhas de arbitragem e o de maior prioridade vence. (lógica implementada nos próprios dispositivos)
+
+#figure(image("images/image-35.png", width: 75%), caption: [Arbitragem centralizada (árbitro PCI)])
+
+#figure(image("images/image-36.png", width: 70%), caption: [Arbitragem distribuída])
 
 *Temporização*:
 - *Síncrona*: eventos determinados por um *clock*; transmissão começa no início de um ciclo; diagrama de tempo fixo (sincroniza normalmente na borda de subida).
 - *Assíncrona*: cada evento depende do anterior; *handshake* entre mestre e escravo; ciclo de duração variável.
+
+#figure(image("images/image-37.png", width: 60%), caption: [Diagrama de tempo síncrono])
+
+#figure(image("images/image-38.png", width: 60%), caption: [Temporização assíncrona (handshake MSYN/SSYN)])
 
 *Largura*: dados → desempenho; endereço → capacidade.
 
@@ -1202,6 +1261,8 @@ Caminho de comunicação *compartilhado* entre dois ou mais dispositivos. Só *u
 - *Read-After-Write (RAW)*: escrita seguida de leitura, indivisível (verifica o que foi escrito).
 - *Split transfer*: divide a transação quando o dado não está pronto (libera o barramento enquanto isso).
 
+#figure(image("images/image-39.png", width: 80%), caption: [Tipos de transferência])
+
 *Bandwidth (throughput)*: total de dados transferível por unidade de tempo (MB/s); na prática menor que o nominal (overhead de comandos/endereços). *Velocidade*: MHz; normalmente 1 bit por linha por ciclo.
 
 === Exemplos
@@ -1211,6 +1272,14 @@ Caminho de comunicação *compartilhado* entre dois ou mais dispositivos. Só *u
 - *EISA*: resposta à MCA; 32 bits, compatível com ISA, bus mastering. Cara, poucas placas.
 - *VLB* (VESA, 1992): 32 bits, 33 MHz, para vídeo; extensão do barramento do 80486; sem bus mastering; substituído pelo PCI.
 - *AGP* (1997): canal exclusivo entre vídeo e processador/memória.
+
+#figure(image("images/image-40.png", width: 50%), caption: [AGP na arquitetura do Pentium II])
 - *PCI* (Intel, 1990): 32/64 bits, arbitragem centralizada, pontes (bridges) com o barramento de sistema e com ISA. Barramento de E/S mais usado.
+
+#figure(image("images/image-41.png", width: 85%), caption: [Arbitragem centralizada no PCI (vermelho: árbitro; azul: dispositivo A; verde: dispositivo B)])
+
+#figure(image("images/image-42.png", width: 85%), caption: [Temporização no PCI (azul: mestre; vermelho: escravo)])
 - *PCI Express*: *serial, ponto a ponto*; cada periférico tem canal exclusivo com o chipset, com várias *lanes* (1x, 4x, 8x, 16x, 32x).
+
+#figure(image("images/image-43.png", width: 80%), caption: [PCI Express])
 - *LPC* (Low Pin Count): dispositivos de baixa bandwidth; substituiu o ISA.

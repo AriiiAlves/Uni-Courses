@@ -21,14 +21,17 @@
   for f in files.pos() { f }
 }
 
+// Primeira parte feita por mim. Segunda parte feita pelo Claude
 #subject("Arquitetura e Organização de Computadores (SCC0902)", lang: "riscv",
   include "Arq-Org-SCC0902/arq-org.typ",
 )
 
+// Feito por mim
 #subject("Matemática Discreta (SMA0180)",
   include "Discrete-Math-SMA0180/discrete-math.typ",
 )
 
+// Claude refatorou e completou resumo.
 #subject("Introdução à Ciência da Computação II (SCC0201)", lang: "c",
   include "ICC-II-SCC0201/icc2.typ",
   [
@@ -38,20 +41,22 @@
   ],
 )
 
+// Claude transcreveu meu resumo do caderno
 #subject("Cálculo III (SMA0355)",
   include "Calculus-III- SMA0355/calculus3.typ",
 )
 
+// Claude transcreveu meu resumo do caderno
 #subject("Equações Diferenciais Ordinárias (SME0340)",
   include "ODEs-SME0340/odes.typ",
 )
 
-// TODO: iot.typ is written in Markdown syntax (`* item`, `**bold**`, LaTeX math)
-// and does not compile as Typst yet. Uncomment once it is converted.
-// #subject("Internet das Coisas (SSC0952)", lang: "cpp",
-//   include "IoT-SSC0952/iot.typ",
-// )
+// Feito pelo Claude
+#subject("Recuperação de Informação (SCC0282)", lang: "python",
+  include "Info-Rec-SCC0282/info-rec.typ",
+)
 
+// Feito por mim
 #subject("Estatística (SME0123)",
   include "Statistics-SME0123/statistics.typ",
 )

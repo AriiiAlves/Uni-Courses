@@ -56,8 +56,8 @@
     width: 100%,
     stroke: 0.5pt + color,
     radius: 3pt,
-    clip: true,
-    below: 1.5em,
+    // Rounded corners come from the inner blocks (no clip needed).
+    below: 1.1em,
     // Breakable so boxes taller than a page continue on the next one instead
     // of being clipped; the sticky title bar never gets orphaned.
     breakable: true,
@@ -65,14 +65,16 @@
     #block(
       fill: color.lighten(10%),
       width: 100%,
-      inset: 8pt,
+      inset: (x: 7.5pt, y: 5.5pt),
       below: 0pt,
       sticky: true,
+      radius: (top: 3pt),
     )[#text(fill: white, weight: "bold")[#title]]
     #block(
       fill: color.lighten(90%),
       width: 100%,
-      inset: 12pt,
+      inset: (x: 10pt, y: 8.5pt),
+      radius: (bottom: 3pt),
     )[#body]
   ]
 }
@@ -136,10 +138,10 @@
 #let example(body) = block(
   fill: colors.example-bg,
   stroke: (left: 4pt + colors.secondary.lighten(30%)),
-  inset: (x: 12pt, y: 12pt),
+  inset: (x: 10pt, y: 8.5pt),
   radius: 4pt,
   width: 100%,
-  below: 1em,
+  below: 0.9em,
 )[
   #text(fill: colors.secondary.darken(10%), weight: "bold", style: "italic")[Example.]\
   #body
@@ -163,7 +165,7 @@
   // Page setup
   set page(
     paper: "a4",
-    margin: 2cm,
+    margin: (x: 1.5cm, top: 1.8cm, bottom: 1.5cm),
     header: context {
       if counter(page).get().first() > 1 {
         grid(
@@ -199,13 +201,13 @@
     block(
       fill: code-bg,
       stroke: 0.5pt + code-border,
-      inset: (x: 12pt, y: 10pt),
-      radius: 6pt,
+      inset: (x: 10pt, y: 7.5pt),
+      radius: 4pt,
       width: 100%,
       breakable: true,
     )[
       #if it.lang != none and it.lang != "" and it.lang != "text" {
-        place(top + right, dx: 6pt, dy: -6pt)[
+        place(top + right, dx: 5pt, dy: -4pt)[
           #text(size: 0.7em, fill: code-label, font: "DejaVu Sans")[#it.lang]
         ]
       }
@@ -264,7 +266,7 @@
       set par(justify: false, leading: 0.55em)
       align(center + horizon, stack(
         spacing: 0pt,
-        text(size: 10pt, tracking: 4pt, weight: "bold", fill: white.transparentize(30%))[CAPÍTULO],
+        text(size: 10pt, tracking: 4pt, weight: "bold", fill: white.transparentize(30%))[MATÉRIA],
         v(1.6em),
         text(size: 80pt, weight: "bold", fill: rgb("#ffd166"))[#n], // warm gold, complementary to purple
         v(1.2em),
@@ -279,33 +281,23 @@
     })
   }
 
+  // Headings 2-5: block spacing instead of fixed v() gaps, so the space
+  // around consecutive headings (and paragraphs) collapses instead of adding up.
   // Level 2 headings - Section style
-  show heading.where(level: 2): it => {
-    v(1.5em)
-    text(size: 14pt, weight: "bold", fill: heading-color)[#it]
-    v(0.75em)
-  }
+  show heading.where(level: 2): set block(above: 1.5em, below: 0.75em)
+  show heading.where(level: 2): set text(size: 12.5pt, weight: "bold", fill: heading-color)
 
   // Level 3 headings - Subsection style
-  show heading.where(level: 3): it => {
-    v(1em)
-    text(size: 12pt, weight: "bold", fill: heading-color.lighten(20%))[#it]
-    v(0.5em)
-  }
+  show heading.where(level: 3): set block(above: 1.4em, below: 0.7em)
+  show heading.where(level: 3): set text(size: 11pt, weight: "bold", fill: heading-color.lighten(20%))
 
   // Level 4 headings
-  show heading.where(level: 4): it => {
-    v(0.8em)
-    text(size: 11pt, weight: "bold", fill: heading-color.lighten(35%))[#it]
-    v(0.4em)
-  }
+  show heading.where(level: 4): set block(above: 1.25em, below: 0.65em)
+  show heading.where(level: 4): set text(size: 10.5pt, weight: "bold", fill: heading-color.lighten(35%))
 
   // Level 5 headings
-  show heading.where(level: 5): it => {
-    v(0.6em)
-    text(size: 10.5pt, weight: "bold", fill: heading-color.lighten(50%))[#it]
-    v(0.3em)
-  }
+  show heading.where(level: 5): set block(above: 1.15em, below: 0.6em)
+  show heading.where(level: 5): set text(size: 10pt, weight: "bold", fill: heading-color.lighten(50%))
 
   // --- TITLE PAGE ---
   align(center + horizon)[
@@ -345,15 +337,36 @@
   ]
 
   // Table of Contents
-  heading(level: 1, numbering: none)[#get-translation("table-of-contents", lang: lang)]
+  heading(level: 1, numbering: none, outlined: false)[#get-translation("table-of-contents", lang: lang)]
   {
-    // chapters stand out in the table of contents
-    show outline.entry.where(level: 1): it => block(above: 1.4em)[
-      #text(weight: "bold", fill: heading-color)[#it]
-    ]
-    outline(title: none, indent: auto)
+    // Two columns, smaller text, tighter spacing than the body.
+    set text(size: 9pt)
+    set par(leading: 0.55em, justify: false)
+    show outline.entry: set block(spacing: 0.65em)
+
+    // Subjects: "MATÉRIA N" label, bold name, then a separator line.
+    show outline.entry.where(level: 1): it => {
+      let n = counter(heading).at(it.element.location()).first()
+      block(above: 1.6em, below: 0.8em, sticky: true)[
+        #if it.element.numbering != none {
+          text(size: 7pt, tracking: 2pt, weight: "bold", fill: heading-color.lighten(30%))[MATÉRIA #n]
+          v(0.4em, weak: true)
+        }
+        #text(weight: "bold", fill: heading-color)[#it]
+        #v(0.5em, weak: true)
+        #line(length: 100%, stroke: 1pt + heading-color)
+      ]
+    }
+
+    columns(2, gutter: 1.8em, outline(title: none, indent: auto))
   }
 
-  // Document body
+  // Document body: slightly smaller, tighter text than the default 11pt.
+  set text(size: 10pt)
+  set par(leading: 0.8em, spacing: 1em)
+  // Display equations and lists: a bit tighter than the default.
+  show math.equation.where(block: true): set block(above: 0.85em, below: 0.85em)
+  set list(spacing: 0.75em)
+  set enum(spacing: 0.75em)
   body
 }

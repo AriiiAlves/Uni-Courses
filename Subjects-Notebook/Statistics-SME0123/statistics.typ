@@ -807,85 +807,667 @@ Inferência estatística é fazer uma afirmação sobre os parâmetros da popula
 		- *Método de Máxima Verossimilhança* - O que usaremos.
 	]
 
-	#Highlight1("Método de Máxima Verossimilhança")[
-			Seja X uma variável aleatória com f.m.p $p_x (x,theta)$ ou f.d.p. $f_x (x,theta)$, em que $theta$ é o parâmetro que queremos estimar tal que $theta in Theta in RR$. Considere:
+#Highlight1("Método dos Momentos")[
+		Ideia: igualar os *momentos populacionais* (que dependem de $theta$) aos *momentos amostrais* correspondentes e resolver para $theta$.
 
-			- $X = (X_1, X_2,...,X_n)$ - Amostra aleatória
-			- $x = (x_1, x_2,...,x_n)$ - Amostra observada ou vetor de observações de X
+		*Definição: Momentos*
 
-			OBS:
+		- $k$-ésimo momento populacional: $mu_k = E(X^k)$ (função de $theta$)
+		- $k$-ésimo momento amostral: $M_k = 1/n sum_(i=1)^n X_i^k$
 
-			- $theta$ pode ser um vetor, $theta = (theta_1, ..., theta_k)$.
-			- Iremos considerar casos onde a variável aleatória não depende de $theta$.
+		Em particular, $M_1 = overline(X)$.
 
-			*Definição: Função de Verossimilhança*
-			
-			A função de verossimilhança $cal(L)(theta, x)$ é definida por:
+		*Estimador pelo Método dos Momentos (EMM)*
 
-			$ cal(L)(theta, x) = product_(i=1)^n p_x (x_i, theta) " ou " product_(i=1)^n f_x (x_i, theta) $
+		Se $theta = (theta_1, ..., theta_k)$ tem $k$ parâmetros, montamos o sistema com os $k$ primeiros momentos:
 
-			#Highlight2("De onde vem a função")[
-				Ela vem de independência. Se $X_1, ..., X_n$ é amostra aleatória, a probabilidade conjunta de observar exatamente aquela amostra é, por definição:
+		$ E(X^j) = 1/n sum_(i=1)^n X_i^j " , " j = 1, ..., k $
 
-				$ P(X_1=x_1,...,X_n=x_n) = product_(i=1)^n P(X_i=x_i) = product_(i=1)^n p_x (x_i, theta) $
-			]
+		A solução $tilde(theta)$ é o estimador pelo método dos momentos.
 
-			*Definição: Função Log-verossimilhança*
+		OBS: Usa-se tantas equações quanto parâmetros. Lembrar que $"Var"(X) = E(X^2) - E(X)^2$ ajuda a trocar o 2º momento pela variância.
 
-			A função de log-verossimilhança $cal(l)(theta, x)$ é definida por:
+		#example[
+			*Poisson*
 
-			$ cal(l)(theta, x) = ln (cal(L)(theta, x)) $
+			$ E(X) = lambda arrow.r.double tilde(lambda) = overline(X) $
 
-			Com ela, o produtório vira soma (mais fácil de derivar).
+			*Uniforme* $U(0, theta)$
 
-			OBS: $log = ln$ (em Estatística)
+			$ E(X) = theta/2 = overline(X) arrow.r.double tilde(theta) = 2 overline(X) $
 
-			*Estimador de Máxima Verossimilhança*
+			*Normal* $N(mu, sigma^2)$ (dois parâmetros)
 
-			O estimador de máxima verossimilhança (EMV) de $theta$ ($hat(theta)$) é o valor que maximiza a função $cal(L)(theta,x)$.
+			$ E(X) = mu = overline(X) $
+			$ E(X^2) = sigma^2 + mu^2 = 1/n sum X_i^2 $
 
-			Em alguns casos, podemos obter fazendo:
-
-			$ (partial L (theta, x))/(partial theta) = 0 " , " (partial^2 L (theta, x))/(partial theta^2) < 0 $
-
-			Maximizar $cal(L)(theta, x)$ é equivalente a maximizar $cal(l)(theta, x)$.
-
-			#example[
-
-				*Bernoulli* (discreto)
-
-				Vamos estimar a probabilidade $p$.
-
-				$ p_x (x,p) = p^x (1-p)^(1-x)" , " x in {0,1} $
-
-				$ cal(L)(p) = product_(i=1)^n p^x_i (1-p)^(1-x_i) = p^(sum x_i) (1-p)^(n-sum x_i) $
-
-				$ cal(l) = (sum x_i) ln p + (n - sum x_i) ln(1-p) $
-
-				$ (partial cal(l))/(partial p) = (sum x_i)/p - (n - sum x_i)/(1-p) = 0 arrow.r.double hat(p) = (sum x_i)/n = overline(X) $
-
-				*Poisson* (contínuo)
-
-				Vamos estimar o parâmetro $lambda$.
-
-				$ p_x (x, lambda) = (e^(-lambda) lambda^x)/x! $
-
-				$ cal(L)(lambda) = (e^(- n lambda) lambda^(sum x_i))/(product x_i !) $
-
-				$ cal(l)(lambda) = cal(l)(lambda) = -n lambda + (sum x_i) ln lambda - ln (product x_i !) $
-
-				$ (partial cal(l))/(partial lambda) = -n + (sum x_i)/lambda = 0 arrow.r.double hat(lambda) = overline(X) $
-			]
-
-			*Propriedade do EMV: Invariância*
-
-			Se $hat(theta)$ é o EMV de $theta$, então $g(hat(theta))$ é o EMV de $g(theta)$
-
-			#example[
-				Bernoulli.
-
-				$ hat(p) = overline(X) $
-
-				$ "Var"(X) = p(1-p) = overline(X)(1-overline(X)) $
-			]
+			$ arrow.r.double tilde(mu) = overline(X) " , " tilde(sigma)^2 = 1/n sum X_i^2 - overline(X)^2 = 1/n sum_(i=1)^n (X_i - overline(X))^2 $
 		]
+
+		OBS: O EMM nem sempre coincide com o EMV (ex.: na $U(0,theta)$ o EMV é $max(X_i)$, não $2 overline(X)$).
+	]
+
+#Highlight1("Método de Máxima Verossimilhança")[
+		Seja X uma variável aleatória com f.m.p $p_x (x,theta)$ ou f.d.p. $f_x (x,theta)$, em que $theta$ é o parâmetro que queremos estimar tal que $theta in Theta in RR$. Considere:
+
+		- $X = (X_1, X_2,...,X_n)$ - Amostra aleatória
+		- $x = (x_1, x_2,...,x_n)$ - Amostra observada ou vetor de observações de X
+
+		OBS:
+
+		- $theta$ pode ser um vetor, $theta = (theta_1, ..., theta_k)$.
+		- Iremos considerar casos onde a variável aleatória não depende de $theta$.
+
+		*Definição: Função de Verossimilhança*
+		
+		A função de verossimilhança $cal(L)(theta, x)$ é definida por:
+
+		$ cal(L)(theta, x) = product_(i=1)^n p_x (x_i, theta) " ou " product_(i=1)^n f_x (x_i, theta) $
+
+		#Highlight2("De onde vem a função")[
+			Ela vem de independência. Se $X_1, ..., X_n$ é amostra aleatória, a probabilidade conjunta de observar exatamente aquela amostra é, por definição:
+
+			$ P(X_1=x_1,...,X_n=x_n) = product_(i=1)^n P(X_i=x_i) = product_(i=1)^n p_x (x_i, theta) $
+		]
+
+		*Definição: Função Log-verossimilhança*
+
+		A função de log-verossimilhança $cal(l)(theta, x)$ é definida por:
+
+		$ cal(l)(theta, x) = ln (cal(L)(theta, x)) $
+
+		Com ela, o produtório vira soma (mais fácil de derivar).
+
+		OBS: $log = ln$ (em Estatística)
+
+		*Estimador de Máxima Verossimilhança*
+
+		O estimador de máxima verossimilhança (EMV) de $theta$ ($hat(theta)$) é o valor que maximiza a função $cal(L)(theta,x)$.
+
+		Em alguns casos, podemos obter fazendo:
+
+		$ (partial L (theta, x))/(partial theta) = 0 " , " (partial^2 L (theta, x))/(partial theta^2) < 0 $
+
+		Maximizar $cal(L)(theta, x)$ é equivalente a maximizar $cal(l)(theta, x)$.
+
+		#example[
+
+			*Bernoulli* (discreto)
+
+			Vamos estimar a probabilidade $p$.
+
+			$ p_x (x,p) = p^x (1-p)^(1-x)" , " x in {0,1} $
+
+			$ cal(L)(p) = product_(i=1)^n p^x_i (1-p)^(1-x_i) = p^(sum x_i) (1-p)^(n-sum x_i) $
+
+			$ cal(l) = (sum x_i) ln p + (n - sum x_i) ln(1-p) $
+
+			$ (partial cal(l))/(partial p) = (sum x_i)/p - (n - sum x_i)/(1-p) = 0 arrow.r.double hat(p) = (sum x_i)/n = overline(X) $
+
+			*Poisson* (contínuo)
+
+			Vamos estimar o parâmetro $lambda$.
+
+			$ p_x (x, lambda) = (e^(-lambda) lambda^x)/x! $
+
+			$ cal(L)(lambda) = (e^(- n lambda) lambda^(sum x_i))/(product x_i !) $
+
+			$ cal(l)(lambda) = cal(l)(lambda) = -n lambda + (sum x_i) ln lambda - ln (product x_i !) $
+
+			$ (partial cal(l))/(partial lambda) = -n + (sum x_i)/lambda = 0 arrow.r.double hat(lambda) = overline(X) $
+		]
+
+		*Propriedade do EMV: Invariância*
+
+		Se $hat(theta)$ é o EMV de $theta$, então $g(hat(theta))$ é o EMV de $g(theta)$
+
+		#example[
+			Bernoulli.
+
+			$ hat(p) = overline(X) $
+
+			$ "Var"(X) = p(1-p) = overline(X)(1-overline(X)) $
+		]
+	]
+== Propriedades dos Estimadores
+
+#Highlight1("Vício (Viés)")[
+	Seja $theta$ o parâmetro de interesse e $T(X) = T(X_1,...,X_n)$ um estimador para este parâmetro.
+
+	*Definição: Vício*
+
+	O vício (viés) de um estimador $T(X)$ é a diferença entre $E(T(X))$ e $theta$:
+
+	$ B_theta (T(X)) = E(T(X)) - theta $
+
+	$T(X)$ é um estimador *não-viciado* (não-viesado) de $theta$ se $B_theta (T(X)) = 0$, ou seja, se $E(T(X)) = theta$ para todo $theta$.
+
+	*Definição: Assintoticamente não-viciado*
+
+	Um estimador viciado $T(X)$ de $theta$ é dito assintoticamente não-viciado se:
+
+	$ lim_(n arrow.r infinity) B_theta (T(X)) = 0 $
+
+	OBS: O cálculo do viés pode ser usado para sugerir novos estimadores (corrigindo o vício).
+]
+
+#Highlight1("Erro Quadrático Médio (EQM)")[
+	O EQM de um estimador $T(X)$ de $theta$ é definido por:
+
+	$ "EQM"_theta (T(X)) = E[(T(X) - theta)^2] $
+
+	É uma medida de desempenho razoável para um estimador, pois pode ser decomposto em variância e vício:
+
+	$ "EQM"_theta (T(X)) = "Var"(T(X)) + [E(T(X)) - theta]^2 = "Var"(T(X)) + [B_theta (T(X))]^2 $
+]
+
+#Highlight1("Eficiência")[
+	Considere dois estimadores $T_1 (X) = hat(theta)_1$ e $T_2 (X) = hat(theta)_2$ *não-viciados* para um parâmetro $theta$.
+
+	Dizemos que $T_1 (X)$ é mais eficiente que $T_2 (X)$ se:
+
+	$ "Var"(T_1 (X)) < "Var"(T_2 (X)) $
+]
+
+#Highlight1("Consistência")[
+	Seja ${T_n (X)}_(n >= 1)$ uma sequência de estimadores de $theta$:
+
+	$ T_1 (X_1) " ; " T_2 (X_1,X_2) " ; " ... " ; " T_k (X_1,...,X_k) " ; " ... $
+
+	A sequência é *consistente* se, para todo $epsilon > 0$:
+
+	$ lim_(n arrow.r infinity) P(|T_n (X) - theta| >= epsilon) = 0 $
+
+	Em geral, usamos a *Desigualdade de Chebyshev* para verificar:
+
+	$ P(|T_n (X) - theta| >= epsilon) <= ("Var"(T(X)))/epsilon^2 $
+
+	*Proposição*
+
+	A sequência ${T_n (X)}_(n>=1)$ é consistente se:
+
+	$ lim_(n arrow.r infinity) E(T_n (X)) = theta " e " lim_(n arrow.r infinity) "Var"(T_n (X)) = 0 $
+]
+
+= Estimação por Intervalos
+
+#Highlight1("Intervalo de Confiança")[
+	A estimação pontual dá um único valor para o parâmetro. A estimação por intervalos constrói intervalos que indicam, além da estimativa, uma *medida de precisão* dessa estimativa. Esses intervalos são chamados Intervalos de Confiança (IC).
+
+	Seja $alpha$ um valor pequeno ($0 < alpha < 1$):
+
+	- $alpha$ - Nível de significância
+	- $1 - alpha$ - Nível de confiança
+
+	Usamos $gamma = (1-alpha) times 100%$ para denotar o nível de confiança em porcentagem.
+]
+
+== Intervalo de Confiança para a Média ($mu$)
+
+#Highlight1("IC para $mu$ com $sigma^2$ conhecida")[
+	Seja $X = (X_1,...,X_n)$ amostra aleatória de X com $E(X) = mu$ e $"Var"(X) = sigma^2$. Já sabemos que $overline(X) ~ N(mu; sigma^2/n)$ e portanto:
+
+	$ Z = (overline(X) - mu)/(sigma/sqrt(n)) ~ N(0;1) $
+
+	Partindo de $P(-z_(alpha/2) <= Z <= z_(alpha/2)) = 1 - alpha$ e isolando $mu$:
+
+	$ P(overline(X) - z_(alpha/2) sigma/sqrt(n) <= mu <= overline(X) + z_(alpha/2) sigma/sqrt(n)) = 1 - alpha $
+
+	Logo, o intervalo com $gamma = (1-alpha) times 100%$ de confiança para $mu$ é:
+
+	$ "IC"_gamma : [overline(X) - z_(alpha/2) sigma/sqrt(n) " ; " overline(X) + z_(alpha/2) sigma/sqrt(n)] $
+]
+
+#Highlight2("Interpretação do intervalo")[
+	OBS: $mu$ é um *parâmetro*, não uma variável aleatória. O que é aleatório é o intervalo.
+
+	*Intervalo aleatório* - quando o intervalo está em função da amostra aleatória:
+
+	- O intervalo aleatório tem probabilidade $(1-alpha)$ de conter o verdadeiro valor de $mu$.
+
+	*Intervalo numérico* - quando usamos os valores observados da amostra:
+
+	- Os dados fornecem evidências de que o verdadeiro valor de $mu$ encontra-se no intervalo, com confiança de $(1-alpha)$.
+	- Se construíssemos uma grande quantidade de intervalos, todos baseados em amostras de mesmo tamanho n, esperamos que $(1-alpha) times 100%$ deles contenham o verdadeiro valor de $mu$.
+]
+
+#Highlight1("Erro Amostral e tamanho da amostra")[
+	O IC para $mu$ (com $sigma^2$ conhecida) pode ser reescrito como:
+
+	$ P(|overline(X) - mu| <= z_(alpha/2) sigma/sqrt(n)) = 1 - alpha $
+
+	*Definição: Erro amostral*
+
+	Define-se erro amostral (ou erro máximo) $epsilon$ de $mu$ a quantidade:
+
+	$ epsilon = z_(alpha/2) sigma/sqrt(n) $
+
+	e o intervalo corresponde a $"IC"_gamma : [overline(X) - epsilon " ; " overline(X) + epsilon]$.
+
+	Fixando o erro máximo admissível, obtemos o tamanho da amostra:
+
+	$ n = (z_(alpha/2) sigma/epsilon)^2 $
+]
+
+#Highlight1("IC para $mu$ com $sigma^2$ desconhecida")[
+	Como $sigma^2$ é desconhecida, precisamos estimá-la a partir da amostra, usando $S^2$:
+
+	$ S^2 = (sum_(i=1)^n (X_i - overline(X))^2)/(n-1) $
+
+	Considere agora a variável aleatória T, que tem distribuição *t-Student* com $(n-1)$ graus de liberdade:
+
+	$ T = (overline(X) - mu)/(S/sqrt(n)) ~ t"-Student"(n-1) $
+
+	Partindo de $P(-t_(alpha/2)^(n-1) <= T <= t_(alpha/2)^(n-1)) = 1 - alpha$, o intervalo com $gamma = (1-alpha) times 100%$ de confiança para $mu$ é:
+
+	$ "IC"_gamma : [overline(X) - t_(alpha/2)^(n-1) S/sqrt(n) " ; " overline(X) + t_(alpha/2)^(n-1) S/sqrt(n)] $
+]
+
+== Intervalo de Confiança para a Proporção ($p$)
+
+#Highlight1("IC para $p$")[
+	Seja X com distribuição Bernoulli de parâmetro $p$, e $hat(p) = overline(X)$ o estimador pontual da proporção populacional. Para n suficientemente grande:
+
+	$ hat(p) ~ N(p; (p(1-p))/n) arrow.r.double Z = (hat(p) - p)/sqrt((p(1-p))/n) ~ N(0;1) $
+
+	Partindo de $P(-z_(alpha/2) <= Z <= z_(alpha/2)) = 1 - alpha$:
+
+	$ "IC"_gamma : [hat(p) - z_(alpha/2) sqrt((p(1-p))/n) " ; " hat(p) + z_(alpha/2) sqrt((p(1-p))/n)] $
+
+	*Problema:* os limites do intervalo dependem do próprio parâmetro $p$, que é desconhecido. Para contornar isso, usamos duas abordagens.
+]
+
+#Highlight1("Abordagem Otimista")[
+	Substituir $p$ pela proporção amostral de sucesso, $hat(p)$:
+
+	$ "IC"_gamma : [hat(p) - z_(alpha/2) sqrt((hat(p)(1-hat(p)))/n) " ; " hat(p) + z_(alpha/2) sqrt((hat(p)(1-hat(p)))/n)] $
+]
+
+#Highlight1("Abordagem Conservativa")[
+	Utilizar o fato de que o valor máximo da variância $p(1-p)$ é atingido quando $p = 1/2$ (máxima variabilidade). Logo $p(1-p) <= 1/4$, ou equivalentemente:
+
+	$ sqrt((p(1-p))/n) <= sqrt(1/(4n)) $
+
+	Assim:
+
+	$ "IC"_gamma : [hat(p) - z_(alpha/2) sqrt(1/(4n)) " ; " hat(p) + z_(alpha/2) sqrt(1/(4n))] $
+]
+
+#Highlight1("Erro Amostral e tamanho da amostra para $p$")[
+	O erro amostral (erro máximo) da verdadeira proporção populacional é:
+
+	$ epsilon = z_(alpha/2) sqrt((p(1-p))/n) $
+
+	Fixado o erro amostral, o tamanho amostral adequado é:
+
+	$ n = (z_(alpha/2)/epsilon)^2 p(1-p) $
+
+	que depende do parâmetro desconhecido $p$. Então:
+
+	- *Havendo informação sobre $p$* (estudos anteriores, especialistas, amostra piloto, etc.), dita $p^*$:
+
+	$ n = (z_(alpha/2)/epsilon)^2 p^* (1-p^*) $
+
+	- *Na falta de informação sobre $p$*, usamos a abordagem conservativa ($p = 1/2$):
+
+	$ n = (z_(alpha/2)/(2 epsilon))^2 $
+]
+
+== Intervalo de Confiança para a Variância ($sigma^2$)
+
+#Highlight1("IC para $sigma^2$ de uma população normal")[
+	Seja $(X_1,...,X_n)$ amostra aleatória de X com distribuição $N(mu; sigma^2)$, *ambos parâmetros desconhecidos*. Considere:
+
+	$ Q = ((n-1)S^2)/sigma^2 ~ chi^2_(n-1) " , " S^2 = 1/(n-1) sum_(i=1)^n (X_i - overline(X))^2 $
+
+	Assim, $P(q_1 <= Q <= q_2) = 1 - alpha$, em que:
+
+	- $q_1 = chi^2_(alpha/2)$ - quantil $alpha/2$ da $chi^2$ com $(n-1)$ g.l.
+	- $q_2 = chi^2_(1-alpha/2)$ - quantil $1 - alpha/2$ da $chi^2$ com $(n-1)$ g.l.
+
+	Isolando $sigma^2$:
+
+	$ P(chi^2_(alpha/2) <= ((n-1)S^2)/sigma^2 <= chi^2_(1-alpha/2)) = 1 - alpha arrow.r.double ((n-1)S^2)/chi^2_(1-alpha/2) <= sigma^2 <= ((n-1)S^2)/chi^2_(alpha/2) $
+
+	Logo, o intervalo com $(1-alpha) times 100%$ de confiança para $sigma^2$ é:
+
+	$ "IC"_gamma : [((n-1)S^2)/chi^2_(1-alpha/2) " ; " ((n-1)S^2)/chi^2_(alpha/2)] $
+
+	OBS: Note que os quantis aparecem *invertidos* no intervalo, pois invertemos a desigualdade ao isolar $sigma^2$.
+]
+
+= Testes de Hipóteses
+
+#Highlight1("Ideia e Objetivo")[
+	Teste de hipótese é um procedimento que utiliza os dados para decidir sobre uma determinada afirmação a respeito de um parâmetro desconhecido da população.
+
+	Decidir se a hipótese formulada está correta ou não consiste apenas na escolha entre duas decisões:
+
+	$ "REJEITAR" " ou " "NÃO REJEITAR" $
+
+	*Objetivo:* verificar se os dados amostrais trazem evidências que contrariem ou não uma hipótese (estatística) formulada.
+]
+
+#Highlight1("Hipótese Nula e Alternativa")[
+	*Definição: Hipótese Estatística*
+
+	É uma afirmação sobre o(s) parâmetro(s) de uma característica (variável aleatória) da população.
+
+	*Definição: Hipótese Nula e Alternativa*
+
+	- *Hipótese Nula ($H_0$)* - É a hipótese estatística principal, a qual tentaremos validar no teste.
+	- *Hipótese Alternativa ($H_1$ ou $H_a$)* - É a hipótese que contraria a hipótese nula.
+
+	Escrevemos:
+
+	$ H_0 : theta in Theta_0 " versus " H_1 : theta in Theta_1 " , " Theta_0 inter Theta_1 = emptyset $
+
+	OBS: $H_0$ é verdadeira até que se prove o contrário.
+]
+
+#Highlight1("Estatística de Teste e Região Crítica")[
+	*Definição: Estatística de Teste*
+
+	É uma regra de decisão que nos possibilita decidir por rejeitar ou não $H_0$ com base na amostra.
+
+	*Definição: Região de Rejeição ou Região Crítica ($R_c$)*
+
+	É o conjunto de valores assumidos pela estatística de teste para os quais a hipótese nula é rejeitada. Seu complementar é a *Região de Aceitação ($R_a$)*.
+]
+
+#Highlight1("Erro Tipo I e Erro Tipo II")[
+	Na tomada de decisão podemos cometer dois tipos de erros:
+
+	- *Erro Tipo I* - Rejeitar $H_0$ quando $H_0$ é verdadeira.
+	- *Erro Tipo II* - Não rejeitar $H_0$ quando $H_0$ é falsa.
+
+	As probabilidades de cometer cada um dos erros:
+
+	$ P("Erro Tipo I") = P("Rejeitar" H_0 | H_0 "é verdadeira") = alpha $
+
+	$ P("Erro Tipo II") = P("Não rejeitar" H_0 | H_1 "é verdadeira") = beta $
+
+	em que $alpha$ é o *nível de significância* e $1 - beta$ é o *poder do teste*:
+
+	$ 1 - beta = P("Rejeitar" H_0 | H_1 "é verdadeira") $
+
+	OBS: Quanto maior o poder, melhor o teste.
+
+	*Quadro resumo*
+
+	- $H_0$ verdadeira + Rejeitar $arrow.r$ Erro Tipo I ($alpha$)
+	- $H_0$ verdadeira + Não-rejeitar $arrow.r$ Decisão correta
+	- $H_0$ falsa + Rejeitar $arrow.r$ Decisão correta (poder, $1-beta$)
+	- $H_0$ falsa + Não-rejeitar $arrow.r$ Erro Tipo II ($beta$)
+]
+
+#Highlight2("Função Poder")[
+	É a probabilidade de rejeitar $H_0$ quando a distribuição da qual foram obtidos os dados foi parametrizada por $theta$, $theta in Theta$:
+
+	$ pi(theta) = P("Rejeitar" H_0) $
+]
+
+#Highlight1("Procedimento do teste")[
+	O procedimento para a realização de um teste de hipótese pode ser resumido nos seguintes passos:
+
+	1. Enumerar as hipóteses:
+
+	- (a) $H_0 : theta = theta_0$ vs $H_1 : theta != theta_0$ (Bilateral)
+	- (b) $H_0 : theta = theta_0$ vs $H_1 : theta < theta_0$ (Unilateral à Esquerda)
+	- (c) $H_0 : theta = theta_0$ vs $H_1 : theta > theta_0$ (Unilateral à Direita)
+
+	2. Determinar a Estatística de Teste.
+
+	3. Fixar o nível de significância $alpha$.
+
+	4. Determinar a Região Crítica ($R_c$) e/ou a Região de Aceitação ($R_a$), definidas de acordo com o $alpha$ fixado:
+
+	$ alpha = P("Rejeitar" H_0 | H_0 "é verdadeira") $
+
+	5. Encontrar o valor da estatística e verificar se pertence a $R_c$ ou a $R_a$.
+]
+
+== Teste de Hipótese para a Média Populacional ($mu$)
+
+#Highlight1("Teste para $mu$")[
+	*Hipóteses*
+
+	- (a) $H_0 : mu = mu_0$ vs $H_1 : mu != mu_0$ (Bilateral)
+	- (b) $H_0 : mu = mu_0$ vs $H_1 : mu < mu_0$ (Unilateral à Esquerda)
+	- (c) $H_0 : mu = mu_0$ vs $H_1 : mu > mu_0$ (Unilateral à Direita)
+
+	*Estatística de Teste*
+
+	Depende se a variância populacional $sigma^2$ é conhecida ou desconhecida. Sob $H_0$:
+
+	$ sigma^2 "conhecida" : Z = (overline(X) - mu_0)/(sigma/sqrt(n)) ~ N(0;1) $
+
+	$ sigma^2 "desconhecida" : T = (overline(X) - mu_0)/(S/sqrt(n)) ~ t"-Student"(n-1) $
+
+	*Região Crítica*
+
+	Depende das hipóteses testadas:
+
+	- (a) Bilateral: $R_c = {z : |z| > z_(alpha/2)}$ ou $R_c = {t : |t| > t_(alpha/2)^(n-1)}$
+	- (b) Unilateral à Esquerda: $R_c = {z : z < -z_alpha}$ ou $R_c = {t : t < -t_alpha^(n-1)}$
+	- (c) Unilateral à Direita: $R_c = {z : z > z_alpha}$ ou $R_c = {t : t > t_alpha^(n-1)}$
+
+	*Regra de Decisão*
+
+	Se o valor da estatística Z ou T, dito $z$ ou $t$, pertencer à Região Crítica ($z in R_c$ ou $t in R_c$), rejeitamos $H_0$ ao nível de significância $alpha$.
+]
+
+== Nível Descritivo (valor-p)
+
+#Highlight1("valor-p")[
+	Ao realizar um teste de hipótese, partimos de um valor $alpha$ pré-fixado e tomamos uma decisão com base na região crítica definida ao fixar $alpha$.
+
+	Uma alternativa para a tomada de decisão é, *supondo que $H_0$ é verdadeira*, calcular a probabilidade de se obter estimativas mais extremas (mais favoráveis a $H_1$) do que a fornecida pela amostra. Essa probabilidade é chamada de *nível descritivo* ou *valor-p*.
+
+	- Valores pequenos do valor-p evidenciam que a hipótese nula é falsa, pois significam que a amostra forneceu uma estimativa muito pouco provável de acontecer sob $H_0$.
+	- Informalmente, o valor-p é igual ao "menor nível de significância do teste" para o qual rejeitaríamos $H_0$.
+
+	*Regra de Decisão:* rejeitamos $H_0$ quando $"valor-p" <= alpha$.
+]
+
+== Teste de Hipótese para a Proporção Populacional ($p$)
+
+#Highlight1("Teste para $p$")[
+	*Hipóteses*
+
+	- (a) $H_0 : p = p_0$ vs $H_1 : p != p_0$ (Bilateral)
+	- (b) $H_0 : p = p_0$ vs $H_1 : p < p_0$ (Unilateral à Esquerda)
+	- (c) $H_0 : p = p_0$ vs $H_1 : p > p_0$ (Unilateral à Direita)
+
+	*Estatística de Teste*
+
+	Sob $H_0$:
+
+	$ Z = (hat(p) - p_0)/sqrt((p_0 (1-p_0))/n) ~ N(0;1) $
+
+	OBS: usamos $p_0$ (e não $hat(p)$) no denominador, pois a estatística é construída *sob $H_0$*.
+
+	*Região Crítica*
+
+	- (a) Bilateral: $R_c = {z : |z| > z_(alpha/2)}$
+	- (b) Unilateral à Esquerda: $R_c = {z : z < -z_alpha}$
+	- (c) Unilateral à Direita: $R_c = {z : z > z_alpha}$
+
+	*Regra de Decisão*
+
+	Se $z in R_c$, rejeitamos $H_0$ ao nível de significância $alpha$.
+]
+
+== Teste de Hipótese para Comparação de Duas Médias
+
+#Highlight2("Casos possíveis")[
+	*Objetivo:* comparar duas populações em relação às suas médias.
+
+	Os testes são específicos para cada caso:
+
+	- *Amostras Dependentes* $arrow.r$ Teste t Pareado
+	- *Amostras Independentes*
+		- Variâncias conhecidas
+		- Variâncias desconhecidas
+			- Variâncias iguais
+			- Variâncias diferentes
+]
+
+#Highlight1("Duas Amostras Dependentes: Teste t Pareado")[
+	Considere situações em que as medidas são tomadas antes e após uma intervenção, ou em diferentes locais do mesmo indivíduo.
+
+	Sejam $X_i$ e $Y_i$ as variáveis aleatórias que representam, respectivamente, as medidas antes e após a intervenção no i-ésimo indivíduo. É necessária a suposição de que $X_i$ e $Y_i$ são de populações *normais*.
+
+	Seja $D_i = Y_i - X_i$ (ou $D_i = X_i - Y_i$), com $D_i ~ N(mu_D ; sigma_D^2)$.
+
+	*Hipóteses*
+
+	$ H_0 : mu_D = d_0 " vs " H_1 : mu_D != d_0 $
+
+	ou, equivalentemente:
+
+	$ H_0 : mu_y - mu_x = d_0 " vs " H_1 : mu_y - mu_x != d_0 $
+
+	*Estimadores de $mu_D$ e $sigma_D^2$*
+
+	$ overline(D) = (sum_(i=1)^n D_i)/n " , " S_D^2 = (sum_(i=1)^n (D_i - overline(D))^2)/(n-1) $
+
+	*Estatística de Teste*
+
+	Sob $H_0$:
+
+	$ T = (overline(D) - d_0)/(S_D\/sqrt(n)) ~ t"-Student"(n-1) $
+
+	*Regra de Decisão*
+
+	Rejeitamos $H_0$ ao nível $alpha$ se:
+
+	$ R_c = {t : t <= -t_(alpha/2)^(n-1) " ou " t >= t_(alpha/2)^(n-1)} $
+]
+
+#Highlight1("Duas Amostras Independentes")[
+	Considere as amostras aleatórias *independentes*:
+
+	- $X = (X_1,...,X_(n_x))$ da população $N(mu_x ; sigma_x^2)$
+	- $Y = (Y_1,...,Y_(n_y))$ da população $N(mu_y ; sigma_y^2)$
+
+	OBS: $n_x$ e $n_y$ não necessariamente precisam ser iguais.
+
+	*Hipóteses*
+
+	- (a) $H_0 : mu_x - mu_y = d_0$ vs $H_1 : mu_x - mu_y != d_0$ (Bilateral)
+	- (b) $H_0 : mu_x - mu_y = d_0$ vs $H_1 : mu_x - mu_y < d_0$ (Unilateral à Esquerda)
+	- (c) $H_0 : mu_x - mu_y = d_0$ vs $H_1 : mu_x - mu_y > d_0$ (Unilateral à Direita)
+
+	*Estatística de Teste: $sigma_x^2$ e $sigma_y^2$ conhecidas*
+
+	$ Z = ((overline(X) - overline(Y)) - d_0)/sqrt(sigma_x^2/n_x + sigma_y^2/n_y) ~ N(0;1) $
+
+	*Estatística de Teste: $sigma_x^2$ e $sigma_y^2$ desconhecidas e desiguais*
+
+	$ T = ((overline(X) - overline(Y)) - d_0)/sqrt(S_x^2/n_x + S_y^2/n_y) ~ t"-Student"(nu) $
+
+	em que $S_x^2$ e $S_y^2$ são as variâncias amostrais e os graus de liberdade são:
+
+	$ nu = (S_x^2/n_x + S_y^2/n_y)^2/((S_x^2\/n_x)^2/(n_x - 1) + (S_y^2\/n_y)^2/(n_y - 1)) $
+
+	*Estatística de Teste: $sigma_x^2$ e $sigma_y^2$ desconhecidas e iguais*
+
+	$ T = ((overline(X) - overline(Y)) - d_0)/(S_p sqrt(1/n_x + 1/n_y)) ~ t"-Student"(nu) $
+
+	em que $S_p^2$ é a *variância amostral combinada* (pooled) e $nu = n_x + n_y - 2$:
+
+	$ S_p^2 = ((n_x - 1)S_x^2 + (n_y - 1)S_y^2)/(n_x + n_y - 2) $
+
+	*Região Crítica*
+
+	- (a) Bilateral: $R_c = {z : |z| > z_(alpha/2)}$ ou $R_c = {t : |t| > t_(alpha/2)^(nu)}$
+	- (b) Unilateral à Esquerda: $R_c = {z : z < -z_alpha}$ ou $R_c = {t : t < -t_alpha^(nu)}$
+	- (c) Unilateral à Direita: $R_c = {z : z > z_alpha}$ ou $R_c = {t : t > t_alpha^(nu)}$
+
+	*Regra de Decisão*
+
+	Se $z in R_c$ ou $t in R_c$, rejeitamos $H_0$ ao nível de significância $alpha$.
+]
+
+== Teste Qui-Quadrado de Aderência
+
+#Highlight1("Teste de Aderência")[
+	*Objetivo:* testar a adequabilidade de um modelo probabilístico a um conjunto de dados observado.
+
+	O Teste Qui-Quadrado de Aderência compara as *frequências observadas* das categorias da variável de interesse obtidas na amostra com as *frequências esperadas* baseadas em uma distribuição de probabilidade específica.
+
+	*Hipóteses*
+
+	$ H_0 : P = P_0 $
+
+	em que $P_0$ tem uma distribuição de probabilidade especificada. Se a variável X é categorizada em classes $A_1,...,A_s$ com $p_i = P(X in A_i)$, de modo equivalente:
+
+	$ H_0 : p_1 = p_(1 0), p_2 = p_(2 0), ..., p_s = p_(s 0) $
+	$ H_1 : p_j != p_(j 0) " , para pelo menos um " j $
+
+	OBS: no caso discreto, $p_i = P(X = i)$. No caso contínuo, dividimos o domínio em intervalos e construímos a distribuição de frequências correspondente.
+
+	*Frequências esperadas*
+
+	Em todas as situações obtemos uma tabela de contingência com $O_i$ (valor observado para a classe $A_i$) e $E_i$ (valor esperado sob $H_0$):
+
+	$ E_i = n dot p_(i 0) " , " i = 1,2,...,s $
+
+	OBS: é necessário $E_i >= 5$. Quando isso não ocorre, devemos *agregar as classes*.
+
+	*Estatística de Teste*
+
+	$ Q = sum_(i=1)^s (O_i - E_i)^2/E_i ~ chi^2_(nu) " (aproximadamente)" $
+
+	com graus de liberdade:
+
+	- $nu = s - 1$, se as frequências esperadas puderem ser calculadas sem estimar os parâmetros da distribuição;
+	- $nu = s - 1 - k$, se as frequências esperadas só puderem ser calculadas após a estimação de $k$ parâmetros da distribuição.
+
+	OBS: quanto maior o valor de Q, maior será a probabilidade de as frequências observadas estarem divergindo das esperadas.
+
+	*Região Crítica*
+
+	O teste é *unilateral à direita* (sempre!):
+
+	$ R_c = {q : q > q_c = chi^2_(nu ; alpha)} $
+
+	*Regra de Decisão*
+
+	Rejeita-se $H_0$ ao nível $alpha$ se $q in R_c$.
+]
+
+== Teste Qui-Quadrado de Independência
+
+#Highlight1("Teste de Independência")[
+	*Objetivo:* verificar se duas variáveis categóricas, observadas nas mesmas unidades experimentais, são estatisticamente independentes.
+
+	Considere duas variáveis categóricas A (com $r$ categorias) e B (com $s$ categorias), observadas em $n$ unidades, organizadas em uma *tabela de contingência*:
+
+	- $O_(i j)$ - frequência observada na célula $(i,j)$
+	- $n_(i dot)$ e $n_(dot j)$ - totais marginais
+
+	*Hipóteses*
+
+	$ H_0 : "as variáveis A e B são independentes" $
+	$ H_1 : "as variáveis A e B não são independentes" $
+
+	*Frequências esperadas*
+
+	Sob $H_0$, para todas as categorias $i$ e $j$, vale $P(A_i inter B_j) = P(A_i)P(B_j)$. Estimando as probabilidades pelas proporções marginais:
+
+	$ E_(i j) = n ((n_(i dot))/n)((n_(dot j))/n) = (n_(i dot) n_(dot j))/n $
+
+	Quanto maiores as diferenças entre $O_(i j)$ e $E_(i j)$, maior a evidência contra a independência.
+
+	*Estatística de Teste*
+
+	$ Q = sum_(i=1)^r sum_(j=1)^s (O_(i j) - E_(i j))^2/E_(i j) ~ chi^2_(nu) " , " nu = (r-1)(s-1) $
+
+	*Regra de Decisão*
+
+	O valor-p é $P(chi^2_(nu) >= Q_("obs"))$. Rejeitar $H_0$ quando $"valor-p" <= alpha$; caso contrário, não rejeitar $H_0$.
+
+	OBS: a aproximação qui-quadrado requer contagens esperadas adequadas (regra prática usual: $E_(i j) >= 5$). Uma associação estatística *não implica causalidade*.
+]
